@@ -1,0 +1,61 @@
+---
+title: 'Práctica 2: Limpieza y análisis de datos'
+author: "Miguel Santos Pérez  y Alejandro Arzola García"
+date: "17 de junio de 2020"
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "../pdf") })
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: '2'
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+subtitle: UOC - Tipología y ciclo de vida de los datos
+toc-title: Índice
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+# Descripción del dataset
+
+\newpage
+# Integración y selección de los datos de interés a analizar
+
+\newpage
+# Limpieza de los datos
+## Elementos vacíos
+## Identificación y tratamiento de valores extremos
+
+\newpage
+# Análisis de los datos
+## Selección de los grupos de datos que se quieren analizar/comparar
+## Comprobación de la normalidad y homogeneidad de la varianza
+## Pruebas estadísticas para comparar los grupos de datos
+### Contraste de hipótesis
+### Correlaciones
+### Regresiones
+
+\newpage
+# Exportación de datos finales
+
+\newpage
+# Representación de los resultados a partir de tablas y gráficas
+
+\newpage
+# Resolución del problema
+
+\newpage
+# Contribuciones al trabajo
+
+**Contribuciones**              |  **Firma**                    | 
+--------------------------------|:-----------------------------:|
+Selección del dataset           | MSP, AAG
+Creación del repositorio GitHub | MSP, AAG
+Desarrollo código en R          | MSP, AAG
+Redacción de las respuestas     | MSP, AAG
