@@ -24,15 +24,32 @@ knitr::opts_chunk$set(echo = TRUE)
 \newpage
 # Descripción del dataset
 
-FALTA POR HACER
+En la Práctica 1 de la asginatura de _Tipología y ciclo de vida de los datos_ se creó un proceso _web scraping_ en el que se obtuvieron los datos relacionados a todos los partidos y las estadísticas individuales de todos los jugadores de la actual temporada (2019-2020) de la [\textcolor{blue}{Euroliga}](https://www.euroleague.net/), la máxima competición de clubes de baloncesto de Europa. 
+
+El objetivo final era contribuir al aumento de explotación de los datos para los equipos europeos y tratar de igualar lo que se realiza en América con las poderosas franquicias de NBA.
+
+Mediante el proceso de obtención de datos realizado en _Python_ que comentamos anteriormente, conseguimos crear dos datasets: el primero contiene los datos generales de un partido (nombre de los equipos, puntuación de cada equipo, fecha y hora del partido) y el segundo contiene más de quince estadísticas individuales para cada jugador por cada partido (puntos, minutos, rebotes, asistencias, ...). Este trabajo está disponible en un repositorio de _GitHub_ al que se puede acceder haciendo click [\textcolor{blue}{aquí}](https://github.com/aarzola-uoc/practica1-tycvd).
+
+Para esta segunda práctica queremos seguir progresando para lograr este objetivo y por ello vamos a utilizar los datasets que hemos mencionado para realizar un análisis estadístico.
+
+Los datasets y el código utilizado para generar el análisis estadístico que se desarrolla a continuación está disponible en el siguiente repositorio de _GitHub_:
+
+* \textcolor{blue}{https://github.com/aarzola-uoc/practica2-tycvd}
 
 # Integración y selección de los datos de interés a analizar
 
-FALTA POR HACER
+Tras realizar un análisis en profundidad de los dos datasets de los que disponemos, hemos tomado la decisión de utilizar únicamente el que contiene las estadísticas individuales por partido de cada jugador. 
+
+Los datos relevantes del primer dataset son exclusivamente los nombres de los equipos y el marcador. Sin embargo, estos datos son posibles calcularlos a partir del segundo dataset, incluso aumentar los datos de equipo ya que son la suma de las estadísticas de todos los jugadores para cada partido.
+
+En base a esto, hemos decidido que se creará un nuevo dataset utilizando código R, a partir del dataset de estadísticas de los jugadores, que tendrá las estadísticas de cada equipo por partido (suma de cada jugador es el total del equipo).
+
+Además vamos a calcular una serie de estadísticos muy interesantes y que permiten un análisis mucho más técnico y útli para los equipos. Estos estadísticos son.....
+**FALTA POR HACER (Miguel): definición de estadísticos**
 
 ## Carga de datos originales
 
-Procedemos a cargar el fichero csv _euroleague_stats_per_game.csv_ que contiene el dataset con los datos individuales por partido:
+El primer paso que tenemos que realizar es cargar el fichero csv _euroleague_stats_per_game.csv_ que contiene el dataset con los datos individuales por partido:
 ```{r,eval=TRUE,echo=TRUE}
 data <- read.csv2('../csv/euroleague_stats_per_game.csv')
 ```
@@ -52,6 +69,7 @@ nrow(data)
 
 FALTA POR HACER
 
+## Tratamiento de datos
 ## Elementos vacíos
 ## Identificación y tratamiento de valores extremos
 
@@ -73,9 +91,7 @@ A continuación vamos a exportar nuestro _dataframe_ final a un archivo csv. Est
 write.csv2(data, row.names = TRUE, file = "../csv/euroleague_stats_per_game_clean.csv")
 ```
 
-Este nuevo dataset está disponible, al igual que el resto de la práctica, en el siguiente repositorio de _GitHub_:
-
-* https://github.com/aarzola-uoc/practica2-tycvd
+Este nuevo dataset también está disponible en el repositorio de _GitHub_ mencionado en el primer apartado de este documento.
 
 # Representación de los resultados a partir de tablas y gráficas
 
