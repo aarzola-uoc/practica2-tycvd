@@ -26,7 +26,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 En la Práctica 1 de la asginatura de _Tipología y ciclo de vida de los datos_ se creó un proceso _web scraping_ en el que se obtuvieron los datos relacionados a todos los partidos y las estadísticas individuales de todos los jugadores de la actual temporada (2019-2020) de la [\textcolor{blue}{Euroliga}](https://www.euroleague.net/), la máxima competición de clubes de baloncesto de Europa. 
 
-El objetivo final era contribuir al aumento de explotación de los datos para los equipos europeos y tratar de igualar lo que se realiza en América con las poderosas franquicias de NBA.
+El objetivo final era contribuir al aumento de explotación de los datos para los equipos europeos y tratar de igualar lo que se realiza en América con las poderosas franquicias de [\textcolor{blue}{NBA}](https://es.nba.com/?gr=www).
 
 Mediante el proceso de obtención de datos realizado en _Python_ que comentamos anteriormente, conseguimos crear dos datasets: el primero contiene los datos generales de un partido (nombre de los equipos, puntuación de cada equipo, fecha y hora del partido) y el segundo contiene más de quince estadísticas individuales para cada jugador por cada partido (puntos, minutos, rebotes, asistencias, ...). Este trabajo está disponible en un repositorio de _GitHub_ al que se puede acceder haciendo click [\textcolor{blue}{aquí}](https://github.com/aarzola-uoc/practica1-tycvd).
 
@@ -36,6 +36,7 @@ Los datasets y el código utilizado para generar el análisis estadístico que s
 
 * \textcolor{blue}{https://github.com/aarzola-uoc/practica2-tycvd}
 
+****
 # Integración y selección de los datos de interés a analizar
 
 Tras realizar un análisis en profundidad de los dos datasets de los que disponemos, hemos tomado la decisión de utilizar únicamente el que contiene las estadísticas individuales por partido de cada jugador. 
@@ -65,14 +66,39 @@ Mostramos el número de registros transmitidos:
 nrow(data)
 ```
 
+****
 # Limpieza de los datos
 
-FALTA POR HACER
+El dataset dispone de `r nrow(data)` registros y `r ncol(data)` variables. Estas variables son:
+
+* **MatchId:** identificador único de partido.
+* **Team:** equipo al que pertenece el jugador.
+* **PlayerNumber:** número del jugador.
+* **PlayerName:** nombre del jugador.
+* **Min:** minutos jugados.
+* **Pts:** puntos anotados.
+* **2FG:** tiros de dos (metidos-anotados).
+* **3FG:** tiros de tres (metidos-anotados).
+* **FT:** tiros libres (metidos-anotados).
+* **O:** rebotes ofensivos.
+* **D:** rebotes defensivos.
+* **T:** rebotes totales.
+* **As:** asistencias.
+* **St:** recuperaciones.
+* **To:** pérdidas.
+* **Fv:** tapones a favor.
+* **Ag:** tapones en contra.
+* **Cm:** faltas cometidas.
+* **Rv:** faltas recibidas.
+* **PIR:** valoración del jugador.
+
+En total disponemos de estadísticas de `r length(table(data$MatchId))` partidos y de `r length(table(data$PlayerName))` jugadores diferentes. 
 
 ## Tratamiento de datos
 ## Elementos vacíos
 ## Identificación y tratamiento de valores extremos
 
+****
 # Análisis de los datos
 
 FALTA POR HACER
@@ -84,6 +110,7 @@ FALTA POR HACER
 ### Correlaciones
 ### Regresiones
 
+****
 # Exportación de datos finales
 
 A continuación vamos a exportar nuestro _dataframe_ final a un archivo csv. Este archivo se llamará _euroleague_stats_per_game_clean.csv_. Utilizamos la función `write.csv2()` para exportar el fichero en formato _csv_ español:
@@ -93,14 +120,17 @@ write.csv2(data, row.names = TRUE, file = "../csv/euroleague_stats_per_game_clea
 
 Este nuevo dataset también está disponible en el repositorio de _GitHub_ mencionado en el primer apartado de este documento.
 
+****
 # Representación de los resultados a partir de tablas y gráficas
 
 FALTA POR HACER
 
+****
 # Resolución del problema
 
 FALTA POR HACER
 
+****
 # Contribuciones al trabajo
 
 **Contribuciones**              |  **Firma**                    | 
