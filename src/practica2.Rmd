@@ -24,16 +24,41 @@ knitr::opts_chunk$set(echo = TRUE)
 \newpage
 # Descripción del dataset
 
-\newpage
+FALTA POR HACER
+
 # Integración y selección de los datos de interés a analizar
 
-\newpage
+FALTA POR HACER
+
+## Carga de datos originales
+
+Procedemos a cargar el fichero csv _euroleague_stats_per_game.csv_ que contiene el dataset con los datos individuales por partido:
+```{r,eval=TRUE,echo=TRUE}
+data <- read.csv2('../csv/euroleague_stats_per_game.csv')
+```
+Hemos utilizado la función `read.csv2` ya que el fichero a cargar está en formato _csv_ español, es decir, los separadores son el caracter `;`.
+
+Mostramos los primeros registros del dataset para verificar que los datos se han cargado correctamente:
+```{r,eval=TRUE,echo=TRUE}
+head(data)
+```
+
+Mostramos el número de registros transmitidos:
+```{r,eval=TRUE,echo=TRUE}
+nrow(data)
+```
+
 # Limpieza de los datos
+
+FALTA POR HACER
+
 ## Elementos vacíos
 ## Identificación y tratamiento de valores extremos
 
-\newpage
 # Análisis de los datos
+
+FALTA POR HACER
+
 ## Selección de los grupos de datos que se quieren analizar/comparar
 ## Comprobación de la normalidad y homogeneidad de la varianza
 ## Pruebas estadísticas para comparar los grupos de datos
@@ -41,16 +66,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Correlaciones
 ### Regresiones
 
-\newpage
 # Exportación de datos finales
 
-\newpage
+A continuación vamos a exportar nuestro _dataframe_ final a un archivo csv. Este archivo se llamará _euroleague_stats_per_game_clean.csv_. Utilizamos la función `write.csv2()` para exportar el fichero en formato _csv_ español:
+```{r,eval=TRUE,echo=TRUE}
+write.csv2(data, row.names = TRUE, file = "../csv/euroleague_stats_per_game_clean.csv")
+```
+
+Este nuevo dataset está disponible, al igual que el resto de la práctica, en el siguiente repositorio de _GitHub_:
+
+* https://github.com/aarzola-uoc/practica2-tycvd
+
 # Representación de los resultados a partir de tablas y gráficas
 
-\newpage
+FALTA POR HACER
+
 # Resolución del problema
 
-\newpage
+FALTA POR HACER
+
 # Contribuciones al trabajo
 
 **Contribuciones**              |  **Firma**                    | 
