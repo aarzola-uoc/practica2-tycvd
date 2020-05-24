@@ -115,7 +115,7 @@ FALTA POR HACER
 
 A continuación vamos a exportar nuestro _dataframe_ final a un archivo csv. Este archivo se llamará _euroleague_stats_per_game_clean.csv_. Utilizamos la función `write.csv2()` para exportar el fichero en formato _csv_ español:
 ```{r,eval=TRUE,echo=TRUE}
-write.csv2(data, row.names = TRUE, file = "../csv/euroleague_stats_per_game_clean.csv")
+write.csv2(data, row.names = FALSE, file = "../csv/euroleague_stats_per_game_clean.csv")
 ```
 
 Este nuevo dataset también está disponible en el repositorio de _GitHub_ mencionado en el primer apartado de este documento.
