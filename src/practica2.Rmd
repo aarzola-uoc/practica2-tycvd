@@ -69,6 +69,185 @@ names(data_scoreboards)[names(data_scoreboards) == "Id"] <- "MatchId"
 
 
 
+# 1. Preprocesamiento de datos
+## 1.1 Asignación de missings
+
+Realizamos el preprocesamiento de datos. Informaremos como 0 aquellas variables sin informar, ya que son realmente 0s puesto que corresponden a jugadores que no han jugado.
+
+```{r}
+data_euroleague$Pts[data_euroleague$Pts=="-"]<-"0"
+data_euroleague$Pts <- as.numeric(data_euroleague$Pts)
+
+data_euroleague$O[data_euroleague$O=="-"]<-"0"
+data_euroleague$O <- as.numeric(data_euroleague$O)
+
+data_euroleague$D[data_euroleague$D=="-"]<-"0"
+data_euroleague$D <- as.numeric(data_euroleague$D)
+
+data_euroleague$T[data_euroleague$T=="-"]<-"0"
+data_euroleague$T <- as.numeric(data_euroleague$T)
+
+data_euroleague$As[data_euroleague$As=="-"]<-"0"
+data_euroleague$As <- as.numeric(data_euroleague$As)
+
+data_euroleague$St[data_euroleague$St=="-"]<-"0"
+data_euroleague$St <- as.numeric(data_euroleague$St)
+
+data_euroleague$To[data_euroleague$To=="-"]<-"0"
+data_euroleague$To <- as.numeric(data_euroleague$To)
+
+data_euroleague$Fv[data_euroleague$Fv=="-"]<-"0"
+data_euroleague$Fv <- as.numeric(data_euroleague$Fv)
+
+data_euroleague$Ag[data_euroleague$Ag=="-"]<-"0"
+data_euroleague$Ag <- as.numeric(data_euroleague$Ag)
+
+data_euroleague$Cm[data_euroleague$Cm=="-"]<-"0"
+data_euroleague$Cm <- as.numeric(data_euroleague$Cm)
+
+data_euroleague$Rv[data_euroleague$Rv=="-"]<-"0"
+data_euroleague$Rv <- as.numeric(data_euroleague$Rv)
+
+data_euroleague$PIR[data_euroleague$PIR=="-"]<-"0"
+data_euroleague$PIR <- as.numeric(data_euroleague$PIR)
+
+## Modificamos la variable tiempo
+data_euroleague$Min[data_euroleague$Min=="0"]<-"0:00"
+data_euroleague$Min[data_euroleague$Min=="DNP"]<-"0:00"
+```
+
+## 1.2 Tratamiento de variables
+Para poder trabajar con las variables, necesitamos tratarlas. Así, realizaremos las siguientes modificaciones:
+- *Min*: La variable minutos la pasaremos a formato decimal.
+- *Tiros*: Las variables tiros de dos, tiros de tres y tiros libres, se encuentran en formato "M/A" donde M es convertidos (made) y A intentados (attempts). Por cada una de ellas, crearemos por lo tanto dos variables, separando los aciertos de los intentos.
+- **
+
+```{r}
+data_euroleague$Min <- sapply(strsplit(data_euroleague$Min,":"),
+  function(x) {
+    x <- as.numeric(x)
+    x[1]+x[2]/60
+    }
+)
+
+## Modificamos la variables tiros de 2
+data_euroleague$X2FG[data_euroleague$X2FG=="-"]<-"0/0"
+data_euroleague$X2FG[data_euroleague$X2FG=="0"]<-"0/0"
+data_euroleague$x2M <- sapply(strsplit(data_euroleague$X2FG,"/"),
+  function(x) {
+    x <- as.numeric(x)
+    x[1]
+    }
+)
+data_euroleague$x2A <- sapply(strsplit(data_euroleague$X2FG,"/"),
+  function(x) {
+    x <- as.numeric(x)
+    x[2]
+    }
+)
+
+
+## Modificamos la variables tiros de 3
+data_euroleague$X3FG[data_euroleague$X3FG=="-"]<-"0/0"
+data_euroleague$X3FG[data_euroleague$X3FG=="0"]<-"0/0"
+data_euroleague$x3M <- sapply(strsplit(data_euroleague$X3FG,"/"),
+  function(x) {
+    x <- as.numeric(x)
+    x[1]
+    }
+)
+data_euroleague$x3A <- sapply(strsplit(data_euroleague$X3FG,"/"),
+  function(x) {
+    x <- as.numeric(x)
+    x[2]
+    }
+)
+
+
+## Modificamos la variables tiros libres
+data_euroleague$FT[data_euroleague$FT=="-"]<-"0/0"
+data_euroleague$FT[data_euroleague$FT=="0"]<-"0/0"
+data_euroleague$FTM <- sapply(strsplit(data_euroleague$FT,"/"),
+  function(x) {
+    x <- as.numeric(x)
+    x[1]
+    }
+)
+data_euroleague$FTA <- sapply(strsplit(data_euroleague$FT,"/"),
+  function(x) {
+    x <- as.numeric(x)
+    x[2]
+    }
+)
+```
+
+## 1.3 Agregación de datos
+
+Para cada equipo y partido agregamos los datos.
+
+```{r}
+library(dplyr)
+data_team <- data_euroleague %>% group_by(Team, MatchId) %>%
+  select_if(is.numeric) %>%
+  summarise_each(funs(sum))
+
+data_team[c("PlayerNumber")] <- NULL
+```
+
+## 1.4 Enriquecimiento de los datos. Datos del oponente.
+Durante un encuentro de baloncesto, es tan importante medir lo que tu equipo ha hecho como lo que tu equipo ha recibido. Por lo tanto, buscamos enriquecer la información por partido de cada equipo añadiendo la información del oponente. Para ello, utilizaremos la tabla de scores para completar así los registros.
+
+```{r}
+library(dplyr)
+
+names(data_scoreboards)[names(data_scoreboards) == "Id"] <- "MatchId"
+names(data_scoreboards)[names(data_scoreboards) == "HomeTeam"] <- "Team"
+names(data_scoreboards)[names(data_scoreboards) == "VisitingTeam"] <- "Opponent"
+
+
+library(plyr)
+df_1 <- merge(data_team, data_scoreboards, by=c("MatchId","Team"))
+df_1["Local"] <- 1
+
+
+names(data_scoreboards)[names(data_scoreboards) == "Team"] <- "HomeTeam"
+names(data_scoreboards)[names(data_scoreboards) == "Opponent"] <- "Team"
+names(data_scoreboards)[names(data_scoreboards) == "HomeTeam"] <- "Opponent"
+df_2 <- merge(data_team, data_scoreboards, by=c("MatchId","Team"))
+df_2["Local"] <- 0
+
+data_team <- bind_rows(df_1,df_2)
+
+data_team[c("Date")] <- NULL
+data_team[c("HomeScore")] <- NULL
+data_team[c("VisitingScore")] <- NULL
+data_team[c("Link")] <- NULL
+
+data_team2 <- data_team [c("MatchId","Team","Min","Pts","O","D","T","As","St","To","Fv","Ag","Cm","Rv","PIR","x2M","x2A","x3M","x3A","FTM","FTA")]
+
+names(data_team2)[names(data_team2) == "Pts"] <- "Pts_Opp"
+names(data_team2)[names(data_team2) == "O"] <- "O_Opp"
+names(data_team2)[names(data_team2) == "D"] <- "D_Opp"
+names(data_team2)[names(data_team2) == "T"] <- "T_Opp"
+names(data_team2)[names(data_team2) == "As"] <- "As_Opp"
+names(data_team2)[names(data_team2) == "St"] <- "St_Opp"
+names(data_team2)[names(data_team2) == "To"] <- "To_Opp"
+names(data_team2)[names(data_team2) == "Fv"] <- "Fv_Opp"
+names(data_team2)[names(data_team2) == "Ag"] <- "Ag_Opp"
+names(data_team2)[names(data_team2) == "Cm"] <- "Cm_Opp"
+names(data_team2)[names(data_team2) == "Rv"] <- "Rv_Opp"
+names(data_team2)[names(data_team2) == "PIR"] <- "PIR_Opp"
+names(data_team2)[names(data_team2) == "x2M"] <- "x2M_Opp"
+names(data_team2)[names(data_team2) == "x2A"] <- "x2A_Opp"
+names(data_team2)[names(data_team2) == "x3M"] <- "x3M_Opp"
+names(data_team2)[names(data_team2) == "x3A"] <- "x3A_Opp"
+names(data_team2)[names(data_team2) == "FTM"] <- "FTM_Opp"
+names(data_team2)[names(data_team2) == "FTA"] <- "FTA_Opp"
+
+data_teamopp <- merge(data_team, data_team2, by.x=c("MatchId","Opponent"),  by.y=c("MatchId","Team"))
+data_teamopp["y.min"]<-NULL
+```
+
 
 ## Carga de datos originales
 
