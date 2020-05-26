@@ -249,6 +249,151 @@ data_teamopp["y.min"]<-NULL
 ```
 
 
+
+#2. Creación de nuevas métricas 
+
+Durante los últimos años, se ha dado una vuelta al análisis de la estadísticas en baloncesto. Como los diferentes equipos, de acuerdo a su estilo, juegan a distintos ritmos, no podemos usar los promedios por partido para compararlos.
+Para poder lograr las comparaciones hay definir el concepto de las posesiones, que es la base de estos cálculos. El basket es un juego en el que ambos equipos se alternan la posesión de la pelota. El equipo que aproveche mejor sus posesiones será el equipo ganador.
+Se entiende que una posesión termina con un tiro al aro, una pérdida de balón o un tiro libre. Allí el balón pasa al rival y la posesión se termina.
+¿Qué ocurre si el equipo falla el tiro de campo pero captura el rebote ofensivo? Hoy por hoy, la mayoría de los estadistas de baloncesto consideran que no se le debe anotar una nueva posesión al equipo, sino considerar que la misma posesión continúa.   
+
+Para tener en cuenta lo anteriormente mencionado, definimos las métricas a continuación
+
+#2.1 Pace o Ritmo.
+
+Nos da una idea del ritmo de juego del equipo, expresado en cantidad de posesiones por juego que utiliza. Hay equipos que corren más y equipos que prefieren el juego estático. Por eso las estadísticas por juego NO sirven para comparar equipos.
+Las posesiones se calculan con la siguiente fórmula:
+$Pos = FGA – OR + TO + (FTA*0.4)$
+donde 
+- Pos: posesiones
+- FGA (field goal attempts): lanzamientos de campo (tanto de 2 y de 3)
+- OR (ofensive rebounds): rebotes ofensivos
+- TO (turnovers): pelotas perdidas
+- FTA (free throw attempts): tiros libres lanzados
+
+```{r}
+data_teamopp ["Poss"] <- +data_teamopp["x2A"] +data_teamopp["x3A"] -data_teamopp["O"] +data_teamopp["To"]+0.4*data_teamopp["FTA"]
+```
+
+
+##2.2 Rating ofensivo y defensivo
+Evaluamos el aspecto ofensivo, defensivo y la diferencia entre ambos.
+
+### 2.2.1 Eficiencia ofensiva (Rating ofensivo)
+Habitualmente se evalúa la ofensiva en puntos convertidos por juego, lo cual es una manera un tanto absurda. Si pensamos el juego como una serie de posesiones, el equipo que más puntos convierta en sus posesiones, será el más efectivo. Se multiplica por 100 para expresar los puntos cada 100 posesiones, y no manejar números con decimales. Así:
+
+$Offensive Rating = (puntos/posesiones)*100$
+
+### 2.2.1 Eficiencia defensiva (Rating defensivo)
+Así como medimos la eficiencia ofensiva en base a puntos convertidos cada 100 posesiones, podemos medir la defensa en base a puntos recibidos (o puntos del oponente) cada 100 posesiones del equipo contrario.
+
+$Defensive Rating = (puntos_{oponente}/posesiones)*100$
+
+
+```{r}
+data_teamopp ["Off_Rat"] <- +data_teamopp["Pts"]/data_teamopp["Poss"]
+
+data_teamopp ["Def_Rat"] <- +data_teamopp["Pts_Opp"]/data_teamopp["Poss"]
+```
+
+
+## 2.3 Porcentaje efectivo de tiros de campo (eFG%).
+Esta estadística ajusta los tiros de campo dandole el valor extra (un punto más) a los triples. Esto corrige el FG% común que subestima a los triples. Por ejemplo, si un jugador ha hecho 2/5 en T2 y 1/4 en T3, habrá convertido 3/9 en tiros de campo (33%), que es similar a si hubiera metido 3/5 de T2 y 0/4 en T3. Sin embargo, en el primer supuesto ha conseguido más puntos para el equipo. Así, el eFG% del primero será 44.4% que se ajusta más a la realidad. La fórmula, por tanto es:
+
+$eFG% = (FGM + 0.5*3PM) / FGA$
+
+FGM (field goal made): tiros de campo convertidos
+3PM (3 points made): triples convertidos
+FGA (field goal attempts): tiros de campo intentados
+
+```{r}
+data_teamopp ["eFG"] <- (data_teamopp["x2M"]+1.5*data_teamopp["x3M"])/ (data_teamopp["x2A"]+data_teamopp["x3A"])
+
+data_teamopp ["eFG_Opp"] <- (data_teamopp["x2M_Opp"]+1.5*data_teamopp["x3M_Opp"])/ (data_teamopp["x2A_Opp"]+data_teamopp["x3A_Opp"])
+```
+
+## 2.4 True Shooting (TS) o Lanzamientos reales
+Esta métrica tiene en cuenta los dobles, triples y tiros libres, para dar una idea de cómo tira el jugador globalmente. Ejemplo: en la 2009-2010, Martin Leiva quedó #8 en FG% con 58,72. Pero si le agregamos los libres, cae al puesto #91 con 54.8%. La formula es:
+
+$TS = puntos / (2*(FGA+0.44*FTA)$
+
+- FGA (field goal attempts): lanzamientos de cancha intentados
+- FTA (free throw attempts): tiros libres intentados
+
+```{r}
+data_teamopp ["TS"] <- data_teamopp["Pts"] /  (data_teamopp["x2A"]+data_teamopp["x3A"]+0.44*data_teamopp["FTA"])
+
+data_teamopp ["TS_Opp"] <- data_teamopp["Pts_Opp"] /  (data_teamopp["x2A_Opp"]+data_teamopp["x3A_Opp"]+0.44*data_teamopp["FTA_Opp"])
+```
+
+## 2.5 Rebotes.
+Los rebotes totales de un equipo son de poco valor. Capturar un rebote ofensivo requiere diferentes habilidades que capturar uno defensivo, por lo que deben analizarse por separado.
+Tener en cuenta el número absoluto de rebotes conseguidos, o el promedio de rebotes por partido, nos puede llevar a errores, ya que los rebotes ´disponibles´ dependen de la efectividad: si un equipo falla poco, hay pocos rebotes por tomar. Ejemplo: el equipo A tomó en un partido 20 rebotes defensivos. Si  el equipo B falló 30 lanzamientos (o sea que hubo 30 rebotes en el aro defensivo de A) entonces A capturó 66% de los rebotes en su aro (20 de 30). Pero si B erró 25 tiros, A tomó 80% de los rebotes (20 de 25).
+Esto hace que, para evaluarlo correctamente, definamos: DR% como porcentaje de rebotes defensivos y OR% porcentaje de rebotes ofensivos.  
+
+###2.5.1 Tasa de rebotes ofensivos
+$% de rebotes ofensivos = [OR/(OR+op DR)]*100$
+
+- OR (ofensive rebounds): rebotes ofensivos
+- Op DR (oponent defensive rebounds): rebotes defensivos del rival
+
+###2.5.2 Tasa de rebotes defensivos
+$% de rebotes defensivos = [DR/(DR+op OR)]*100$
+
+- DR (defensive rebounds): rebotes defensivos
+- Op OR (oponent ofensive rebounds): rebotes ofensivos del rival
+
+```{r}
+data_teamopp ["Off_Reb"] <- data_teamopp["O"] /  (data_teamopp["O"]+data_teamopp["D_Opp"])
+
+data_teamopp ["Def_Reb"] <- data_teamopp["D"] /  (data_teamopp["D"]+data_teamopp["O_Opp"])
+```
+
+## 2.6 Porcentaje de asistencias y pérdidas.
+Al igual que con los rebotes y otras estadísitcas, las asistencias por juego no son un buen parámetro, ya que dependen del ritmo de juego. Más preciso es calcular las asistencias expresadas en posesiones terminan con una pérdida de balón. Habitualmente expresado en porcentaje.
+
+### 2.6.1 Porcentaje de asistencias
+Se calculan mediante la siguiente fórmula:
+
+$% de asistencias = (asistencias/posesiones)*100$
+
+```{r}
+data_teamopp ["Pct_ass"] <- data_teamopp["As"] /  (data_teamopp["Poss"])
+
+data_teamopp ["Pct_ass_opp"] <- data_teamopp["As_Opp"] /  (data_teamopp["Poss"])
+```
+
+###2.6.2 Porcentaje de pérdidas
+Lo mismo ocurre con las pérdidas. No es lo mismo perder 10 pelotas en un partido en que hubo 100 posesiones, que en uno que hubo 80. Por eso es mejor calcular las pérdidas cada 100 posesiones. El valor ideal depende del ritmo de juego, pero podríamos decir que el objetivo sería tener menos de 15% de TO y provocar en el oponente más de 15%.
+La fórmula es:
+$% de pérdidas = (pelotas pérdidas/posesiones)*100$
+
+```{r}
+data_teamopp ["Pct_To"] <- data_teamopp["To"] /  (data_teamopp["Poss"])
+
+data_teamopp ["Pct_To_opp"] <- data_teamopp["To_Opp"] /  (data_teamopp["Poss"])
+```
+
+## 2.7 Tiros libres, respecto a tiros de campo (FTM/FGA).
+Es simplemente una manera de expresar el número de veces que un equipo va a la línea y cuántas veces envía al oponente a la línea. Esta considerado (junto con el effective field goal percentage, la tasa de rebotes ofensivos y la tasa de pérdidas) uno de los cuatro factores con los que se miden los partidos. 
+La fórmula es:
+$ Libres por lanzamientos de cancha = (libres convertidos/tiros de cancha intentados) * 100$
+
+```{r}
+data_teamopp["FTR"] <- data_teamopp["FTM"] /  (data_teamopp["x2A"]+ data_teamopp["x3A"])
+
+data_teamopp["FTR_opp"] <- data_teamopp["FTM_Opp"] /  (data_teamopp["x2A_Opp"]+ data_teamopp["x3A_Opp"])
+```
+
+## 2.8 Expected wins (triunfos esperados)
+Para ganar, obviamente hay que meter más puntos que el rival. Existe un cálculo (comprobado en la NBA, baloncesto FIBA y universitario) que de acuerdo a los puntos convertidos y recibidos, se puede estimar la cantidad de partidos que habría que haber ganado. Suele correlacionar muy bien con la realidad. 
+
+$Triunfos esperados = eficiencia ofensiva^14/(eficiencia ofensiva^14+eficiencia defensiva^14)$
+
+```{r}
+data_teamopp ["Expected_Wins"] <- data_teamopp["Off_Rat"]^14 /  (data_teamopp["Off_Rat"]^14+data_teamopp["Def_Rat"]^14)
+```
+
 ## Carga de datos originales
 
 El primer paso que tenemos que realizar es cargar el fichero csv _euroleague_stats_per_game.csv_ que contiene el dataset con los datos individuales por partido:
