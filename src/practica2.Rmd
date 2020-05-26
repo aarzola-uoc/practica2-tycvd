@@ -48,6 +48,28 @@ En base a esto, hemos decidido que se creará un nuevo dataset utilizando códig
 Además vamos a calcular una serie de estadísticos muy interesantes y que permiten un análisis mucho más técnico y útli para los equipos. Estos estadísticos son.....
 **FALTA POR HACER (Miguel): definición de estadísticos**
 
+
+# 0. Carga de ficheros
+
+Una vez realizado el webscrapping, cargamos los ficheros en $R$ para trabajar con ellos. 
+
+```{r}
+setwd("C:/Users/USER-PC/Desktop/tipologia")
+
+data_scoreboards <- read.csv(file="euroleague_scoreboards.csv", header=TRUE,  sep=";", stringsAsFactors = FALSE)
+data_euroleague <- read.csv(file="euroleague_stats_per_game.csv", header=TRUE, sep=";", stringsAsFactors = FALSE)
+```
+
+*MatchId* es una variable que necesitamos para cruzar ambos dataset. Por lo tanto, homogeneizamos su nombre.
+
+```{r}
+names(data_scoreboards)[names(data_scoreboards) == "Id"] <- "MatchId"
+```
+
+
+
+
+
 ## Carga de datos originales
 
 El primer paso que tenemos que realizar es cargar el fichero csv _euroleague_stats_per_game.csv_ que contiene el dataset con los datos individuales por partido:
