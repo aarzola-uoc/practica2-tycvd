@@ -456,6 +456,49 @@ FALTA POR HACER
 ### Correlaciones
 ### Regresiones
 
+## Regresión lineal para estimar los ratings
+
+```{r}
+data_teamopp["Off_Reb_Opp"]<-1-data_teamopp["Def_Reb"]
+
+library(data.table)
+data_ataque <- data_teamopp[c("Off_Rat","eFG","Off_Reb","Pct_To","FTR")]
+
+corr_ataque <- round(cor(data_ataque),2)
+
+library(ggcorrplot)
+ggcorrplot(corr_ataque, type = "upper",
+   lab = TRUE)
+
+model_offesive_rating<- lm(Off_Rat~., data=data_ataque)
+summary(model_offesive_rating)
+
+
+data_defensa <- data_teamopp[c("Def_Rat","eFG_Opp","Off_Reb_Opp","Pct_To_opp","FTR_opp")]
+corr_defensa <- round(cor(data_defensa),2)
+
+ggcorrplot(corr_defensa, type = "upper",
+   lab = TRUE)
+
+model_defensive_rating<- lm(Def_Rat~., data=data_defensa)
+summary(model_defensive_rating)
+```
+
+## Regresión logística para estimar victoria
+Buscamos estimar la probabibilidad de victoria en función de los estadísticos creados. 
+```{r}
+datos_logit<-data_teamopp[c("eFG","Off_Reb","Pct_To","FTR","eFG_Opp","Off_Reb_Opp","Pct_To_opp","FTR_opp","Win","Local")]
+
+model_victoria <- glm(formula=Win ~ . , data=datos_logit, family=binomial)
+summary(model_victoria)
+```
+```{r}
+library(pROC)
+rocobj <- roc( datos_logit$Win, predict(model_victoria, datos_logit), auc = TRUE, ci = TRUE )
+print(rocobj)
+
+plot.roc( rocobj, legacy.axes = TRUE, print.thres = "best", print.auc = TRUE, auc.polygon = FALSE, max.auc.polygon = FALSE, auc.polygon.col="gainsboro", col = 2, grid = TRUE )
+```
 ****
 # Exportación de datos finales
 
