@@ -499,6 +499,429 @@ print(rocobj)
 
 plot.roc( rocobj, legacy.axes = TRUE, print.thres = "best", print.auc = TRUE, auc.polygon = FALSE, max.auc.polygon = FALSE, auc.polygon.col="gainsboro", col = 2, grid = TRUE )
 ```
+
+## Clustering de jugadores
+
+El último paso de este proyecto es ambicioso. Nos ponemos en la piel del director deportivo de uno de los equipos con un proyecto con recursos limitados.
+
+Quiere hacer la mejor plantilla posible, con el mínimo gasto. Para ello, parte del mejor quinteto de la Euroliga y por cada jugador, quiere alternativas con nombres de jugadores que puedan tener un performance similar pero menor precio (obviamente el mejor quinteto será por lo general el más caro).
+
+Para ello, nos piden soporte. Planteamos para ello un proyecto que se dividirá en las siguientes fases:
+- Depuración de datos.
+- Definición de estadísticos para jugadores individuales.
+- Búsqueda de jugadores de perfil similar.
+- Presentación del informe..
+
+Comencemos depurando los datos. Para ello, eliminaremos del registro aquellos registros en los que el jugador en cuestión haya jugado menos minutos de los que consideramos relevantes. 
+
+Para comenzar, eliminamos los registros de aquellos jugadores en un partido en el que han jugado menos de un cuarto (salvo que el motivo sea por expulsión).
+```{r}
+n_registros <- nrow(data_euroleague)
+summary(data_euroleague[c("Min")])
+
+data_players <- data_euroleague[data_euroleague$Min>10 | data_euroleague$Cm==5,]
+n_registros2 <- nrow(data_players)
+n_registros - n_registros2
+```
+Hemos reducido la muestra 1955 registros.
+
+El siguiente paso será calcular el número total de partidos jugados por jugador.
+
+Seleccionamos aquellos jugadores que al menos hayan jugado un 20% de los partidos. Es decir, 6 partidos.
+
+```{r}
+jugador_partido <- data.frame(table(data_players$PlayerName))
+colnames(jugador_partido)[1]<-"PlayerName"
+colnames(jugador_partido)[2]<-"Played_games"
+jugador_partido<-jugador_partido[jugador_partido$Played_games>5,]
+
+data_players<-merge(data_players, jugador_partido)
+```
+Ahora tenemos el dataframe con los candidatos.
+
+El siguiente paso sería realizar un research para definir métricas avanzadas que nos ayuden a comparar jugadores.
+
+Nos basaremos en la siguiente web para definir los estadísticos:
+
+https://bleacherreport.com/articles/1039116-understanding-the-nba-explaining-advanced-offensive-stats-and-metrics
+
+Como necesitaremos datos del equipo, de nuevo el primer paso es enriquecer la tabla cruzando los datos de players y de equipos por partidos.
+```{r}
+data_players2<-merge(data_players, data_teamopp, by=c("MatchId","Team"))
+```
+
+
+1. Assist Percentage (AST%)
+A/(((MP/(TMP/5))*TFG)-FG)
+
+Where A=Assists, MP=Minutes Played, TMP=Team Minutes Played, TFG=Team Field Goals, FG=Field Goals
+
+Explanation
+
+Leading off this guide to advanced offensive metrics in the NBA is perhaps the most basic of the stats: assist percentage. I say perhaps "basic" because it's one of many tempo-free stats, or stats adjusted for pace and volume. 
+
+While assists in themselves are kind of useful to look at, assist percentage is a much better statistic to cite when trying to make a case for a player's skill in the passing department. Assist stats can be padded by two things: the amount of time that a player is on the court and the pace at which his team plays.
+
+A player on a fast-paced team like the Miami Heat or Washington Wizards is going to have more offensive opportunities to rack up counting stats, leading to elevated numbers of assists per game and assists per minute (which are also a better way of looking at assists than just assists by themselves).
+
+Similarly, a player who plays 35 minutes per game is going to have more opportunities to generate assists than a player on the court for 20 minutes per game. It may seem like common sense that averaging 10 assists per game in 20 minutes of action per contest is more impressive than averaging 10 assists per game in 35 minutes of action per contest, but that distinction is lost when only assists per game is cited.    
+
+Because assist percentage is free from the effects of pace and volume, it's a better indication of how effective a player is at racking up the dimes during each and every one of the team's possessions. 
+
+The stat essentially estimates (note: estimates, not calculates) what percentage of made shots by teammates were assisted by a player while he was on the floor.
+
+Limitations
+
+Without looking at play-by-play data, the best this stat can do is provide an estimate of the aforementioned percentage it is meant to calculate. Additionally, there is no way to measure and give credit for good passes that resulted in missed open looks.
+
+Just as with any assist statistic, a player is at the mercy of the skill of his teammates. 
+```{r}
+data_players2$Assist_pct <- data_players2$As.x/(((data_players2$Min/(data_players2$Min.x/5))*(data_players2$x2A.y+data_players2$x3A.y))-(data_players2$x2A.x+data_players2$x3A.x))
+```
+
+Turnover Percentage (TOV%)
+
+Calculation
+
+100*TO/(FGA+0.44*FTA+TO)
+
+Where TO=Turnovers, FGA=Field Goals Attempted, FTA=Free Throws Attempted
+
+Explanation
+
+The second of the offensive tempo-free stats, turnover percentage, is free from the effects of tempo because it isolates the possessions in which the player in question made a box score impact.
+
+Before explaining exactly what this stat does though, I'd like to focus on the parenthetical denominator of the above calculation: (FGA+0.44*FTA+TO). This mathematical expression is the best way of quantifying the number of play results a player was involved in without simply going back through every box score and actually counting.
+
+There are three ways that a player can be involved in the end result of a possession. They can attempt a field goal (regardless of whether it's a two-pointer or a three-pointer), they can end up on the foul line or they can turn the ball over. However, simply summing those three results does not provide the number of possessions because shooters can attempt either one, two or three free throws on any given possession. 
+
+Box scores don't explain how many shots a player was fouled on, so we have no idea of knowing which fouls resulted in and-ones (for example) without looking through historical play-by-play data.
+
+Just trust on this one (I've read the studies and they're too complicated to explain in a short space) and accept the fact that the 0.44 multiplier is the best way of estimating the total number of possessions a player is involved in. 
+
+So now that we've got that out of the way, all this stat really does is calculate the number of turnovers a player will make in 100 individual plays.
+
+Turnovers and turnovers per game are both dependent once more on pace of play and the amount of time a player spends on the court. This rate statistic eliminates those detriments and focuses solely on the percentage of times a player turns the ball over compared to the amount of times they're involved in the play.  
+
+
+Limitations
+
+Turnover percentage still can't factor in the passes that a player makes that result in non-turnovers (i.e. assists or passes to other players who either miss a shot or don't shoot).
+
+Therefore, it's still a fairly limited stat because it only focuses on the true outcomes of possessions when that player is involved. 
+
+```{r}
+data_players2$Turnover_pct<-ifelse((data_players2$x2A.x+data_players2$x3A.x+0.44*data_players2$FTA.x+data_players2$To.x)==0, 0,data_players2$To.x/(data_players2$x2A.x+data_players2$x3A.x+0.44*data_players2$FTA.x+data_players2$To.x))
+```
+
+Offensive Rebound Percentage (ORB%)
+
+
+Calculation
+
+100*(ORB*(TMP/5)/(MP*(TORB+ODRB))
+
+Where ORB=Offensive Rebounds, TMP=Team Minutes Played, MP=Minutes Played, TORB=Team Offensive Rebounds, ODRB=Opponents Defensive Rebounds
+
+
+Explanation
+
+Whenever a shot clanks off the rim, there are four possible outcomes: The ball could go out of bounds and be counted as a defensive team rebound; the ball could bounce of a defensive player and go out of bounds to be counted as an offensive team rebound; the ball could be pulled down by a defensive player and be counted as a defensive rebound; or the ball could be pulled down by an offensive player and be counted as an offensive rebound.
+
+If you add up all four of those results, you account for all of the potential rebounds in a game.
+
+Offensive rebound percentage calculates the percentage of available offensive rebounds that a player grabs while he's on the court.
+
+This is the last of the commonly-used offensive tempo-free rate stats and much like the previous two, it doesn't account for pace or volume.   
+
+
+Limitations
+
+Once more, it's too much trouble to go back and retroactively look at all historical box scores. No one really wants to do that.
+
+Therefore, this is merely an estimate, albeit an accurate one.  
+
+
+De manera análoga, definimos el porcentaje de rebotes defensivos.
+```{r}
+data_players2$Offensive_Reb_pct <- data_players2$O.x*(data_players2$Min.x/5)/(data_players2$Min*(data_players2$O.y+data_players2$D_Opp))
+
+data_players2$Defensive_Reb_pct <- data_players2$D.x*(data_players2$Min.x/5)/(data_players2$Min*(data_players2$D.y+data_players2$O_Opp))
+
+```
+
+
+
+Effective Field-Goal Percentage (eFG%)
+
+Calculation
+
+(FG+0.5*3P)/FGA
+
+Where FG=Field Goals, 3P=Three-Pointers, FGA=Field-Goal Attempts
+
+
+Explanation
+
+Field-goal percentage (FG%) was once one of the better stats for estimating shooting ability up until the popularization of effective field-goal percentage in the 1990s. 
+
+The only difference between the two stats is that three-pointers are weighted more heavily in eFG%. Seeing as three-pointers are worth three points and two-pointers are worth two points, this makes sense.
+
+That may be the most ridiculously obvious sentence I've ever written. 
+
+Don't make the mistake of thinking that the multiplier in front of three-pointers should be 1.5 though. Essentially, it is in the above formula because three-pointers are counted one time in field goals and another 0.5 times on the other side of the addition sign.
+
+So, as for the merits of effective field-goal percentage, tell me which of the following players you'd rather have:
+
+Player A attempts 10 shots from the field, all from within the three-point arc, and drills five of them.
+
+Player B attempts 10 shots from the field, all from outside the three-point arc, and drills five of them.
+
+Player A, who was responsible for 10 points, has a FG% of 50 percent, just like Player B, who was responsible for 15 points, despite shooting the same number of times. However, Player A's eFG% was still 50 percent while Player B's was a much better 75 percent.    
+
+
+Limitations
+
+While I like eFG% as a stat, there is still a measure of shooting that is significantly better. If for nothing else, that's because it takes free-throw shooting into account as well, unlike eFG%. 
+
+You'll see what that stat is pretty soon. 
+
+Also, the penalty for missing a three-pointer is the same as the penalty for missing a two-pointer because all attempts are weighted the same. 
+
+```{r}
+data_players2$eFG_player<-ifelse((data_players2$x3A.x+data_players2$x2A.x)==0,0,(data_players2$x2M.x+1.5*data_players2$x3M.x)/(data_players2$x3A.x+data_players2$x2A.x))
+```
+
+True Shooting Percentage (TS%)
+
+Calculation
+
+PT/(2*(FGA+0.44*FTA))
+
+Where PT=Points, FGA=Field-Goal Attempts, FTA=Free-Throw Attempts
+
+
+Explanation
+
+There are three ways that an NBA player can score: three-pointers, two-pointers and free throws. It just makes sense that the best measure of shooting percentage would take all three of those methods of scoring into account. 
+
+So, does true shooting percentage look at all three?
+
+As you can see by the "Field-Goal Attempts" and "Free-Throw Attempts" in the calculation, TS% clearly at least takes two-pointers and free throws into account. As for the 0.44 multiplier, the same reasoning applies as did for turnover percentage. You can find the full explanation on that slide.
+
+Three-pointers are a little harder to find in the formula, but they're still there, hidden within the word "Points." The maximum TS% is actually 150 percent and can only be achieved if a player hits each and every one of his shots and they're all from downtown. For example, if a player goes 1-for-1 and his only shot is a three-pointer, the formula will read and simplify as follows: 3/(2*1+0.44*0)) = 3/2 = 1.5.
+
+Because this stat does take everything into account, it's easily the best measure of shooting ability we have. Just for the record, it can also be called adjusted shooting percentage, effective shooting percentage, effective percentage, points per shot attempted and scoring efficiency.  
+
+
+Limitations
+
+Other than only accounting for shooting ability, and thereby not qualifying as an overall evaluation of a player's offensive ability, the only true limitation of TS% is that it's possible (although extremely unlikely) to have a TS% of over 100 percent.
+
+Also, just like with effective field-goal percentage, all missed attempts count the same.  
+
+```{r}
+data_players2$TS_player <- ifelse((2*(data_players2$x3A.x+data_players2$x2A.x+0.44*data_players2$FTA.x))==0,0,data_players2$Pts.x/(2*(data_players2$x3A.x+data_players2$x2A.x+0.44*data_players2$FTA.x)))
+```
+
+
+Usage Rate (USG%)
+
+Calculation
+
+100*((FGA+0.44*FTA+TO)*(TMP/5))/(MP*(TFGA+0.44*TFTA+TTO))
+
+Where FGA=Field-Goal Attempts, FTA=Free-Throw Attempts, TO=Turnovers, TMP=Team Minutes Played, MP=Minutes Played, TFGA=Team Field-Goal Attempts, TFTA=Team Free-Throw Attempts, TTO=Team Turnovers
+
+
+Explanation
+
+This may be the most complicated looking calculation yet, but the concept behind it is really quite simple. Usage rate calculates what percentage of team plays a player was involved in while he was on the floor, provided that the play ends in one of the three true results: field-goal attempt, free-throw attempt or turnover.
+
+On average, a player will have a usage rate of 20 percent. Think about it and it will make perfect sense. 
+
+Limitations
+
+Only the true outcomes are measured here, so there is quite a bit left out. For example, a player like Ricky Rubio, who prefers to pass more than shoot will have a much lower USG% than a player who prefers to shoot.
+
+Yet, a player who passes the ball is still involved in a possession in my mind.   
+
+```{r}
+data_players2$Usage_rate <- 
+(data_players2$x3A.x+data_players2$x2A.x+0.44*data_players2$FTA.x+data_players2$To.x)*(data_players2$Min.x/5)/(data_players2$Min*(data_players2$x3A.y+data_players2$x2A.y+0.44*data_players2$FTA.y+data_players2$To.y))
+
+```
+
+
+
+Points Per Possession (PPP)
+
+Calculation
+
+PT/(FGA+0.44*FTA+TO)
+
+Where PT=Points, FGA=Field-Goal Attempts, FTA=Free-Throw Attempts, TO=Turnovers
+
+
+Explanation 
+
+The numerator is clearly represented by the word "Points." There is really no explanation necessary there. 
+
+Per refers to the division sign. 
+
+We've already seen how possessions can be best estimated by what's written in the above denominator. The full explanation is provided on the turnover percentage slide. 
+
+This stat in its simplest form explains how efficiently a player uses his time with the ball to score. With the help of companies like Synergy, PPP can be further broken down into certain situations like isolation plays, pick-and-roll situations, etc. 
+
+
+Limitations
+
+This stat only refers to scoring efficiency and there's more than scoring to basketball, even on offense. 
+
+Other than that and the fact that the possessions are estimates, there aren't too many limitations to PPP. 
+
+```{r}
+data_players2$Points_per_possesion <-ifelse((data_players2$x3A.x+data_players2$x2A.x+0.44*data_players2$FTA.x+data_players2$To.x)==0,0, data_players2$Pts.x/(data_players2$x3A.x+data_players2$x2A.x+0.44*data_players2$FTA.x+data_players2$To.x))
+```
+
+
+Completamos los estadísticos con los encontrados en:
+https://www.fromtherumbleseat.com/pages/advanced-basketball-statistics-formula-sheet
+
+```{r}
+data_players2$FTR_player <- ifelse((data_players2$x2A.x+data_players2$x3A.x)==0,0,data_players2$FTM.x/(data_players2$x2A.x+data_players2$x3A.x))
+```
+
+    Hollinger Assist Ratio (hAST%) = AST / (FGA + .44 * FTA + AST + TOV)
+
+Think of Carmelo Anthony for this statistic, it is a "ball stopper" stat. This divides the number of assists a player has by the number of offensive possessions that end in that player's hands.
+
+```{r}
+data_players2$Hollinger_Assist_ratio <- ifelse((data_players2$x2A.x+data_players2$x3A.x+0.44*data_players2$FTA.x+data_players2$As.x+data_players2$To.x)==0,0, data_players2$As.x/(data_players2$x2A.x+data_players2$x3A.x+0.44*data_players2$FTA.x+data_players2$As.x+data_players2$To.x))
+```
+
+
+    Pomeroy Assist Ratio (pAST%) = AST / (((MP / (TmMP / 5)) * TmFG ) - FG)
+
+The percentage of teammate baskets a player assisted on while he was on the court - my preferred Assists statistic
+
+```{r}
+data_players2$Pomeroy_Assist_ratio <- data_players2$As.x/(((data_players2$Min / (data_players2$Min.x / 5)) * (data_players2$x3A.y+data_players2$x2A.y) ) - (data_players2$x3A.x+data_players2$x2A.x))
+```
+
+
+
+    Steal Percentage (STL%) = STL / ((MP / (TmMP / 5)) * OppPoss)
+
+Percent of opponent possessions in which a player gets a steal
+
+```{r}
+data_players2$Steal_pct<-data_players2$St.x/(data_players2$Min/(data_players2$Min.x/5)*(data_players2$Poss))
+```
+
+
+    Block Percentage (BLK%) = BLK / ((MP / (TmMP / 5 )) * (OppFGA - Opp3PA))
+
+Percent of opponents' "blockable" shots that the player blocks (removes 3 point shots, as these are generally not "blockable", somewhat arbitrary since you see these blocked and a mid range jump shot is just as unlikely to be blocked, yet is included in the sample)
+
+```{r}
+data_players2$Block_pct<-data_players2$Fv.x/(data_players2$Min/(data_players2$Min.x/5)*(data_players2$x2A_Opp))
+```
+
+```{r}
+data_players2$ThreePointers_ratio <- ifelse((data_players2$x3A.x+data_players2$x2A.x)==0,0,data_players2$x3A.x/(data_players2$x3A.x+data_players2$x2A.x))
+
+data_players_cluster <- data_players2[,c("PlayerName","Assist_pct","Turnover_pct","Offensive_Reb_pct","eFG_player","TS_player","Usage_rate","Points_per_possesion","ThreePointers_ratio","Defensive_Reb_pct","FTR_player","Hollinger_Assist_ratio","Pomeroy_Assist_ratio","Steal_pct","Block_pct")]
+```
+
+
+Aplicamos ahora el algoritmo kNN.
+
+```{r}
+dt <- data.table(data_players_cluster)
+acumulados_player<-dt[,list(Assist_pct=mean(Assist_pct),
+Turnover_pct=mean(Turnover_pct),
+Offensive_Reb_pct=mean(Offensive_Reb_pct),
+eFG_player=mean(eFG_player),
+TS_player=mean(TS_player),
+Usage_rate=mean(Usage_rate),
+Points_per_possesion=mean(Points_per_possesion),
+ThreePointers_ratio=mean(ThreePointers_ratio),
+Defensive_Reb_pct=mean(Defensive_Reb_pct),
+FTR_player=mean(FTR_player),
+Hollinger_Assist_ratio=mean(Hollinger_Assist_ratio),
+Pomeroy_Assist_ratio=mean(Pomeroy_Assist_ratio),
+Steal_pct=mean(Steal_pct),
+Block_pct=mean(Block_pct)),by=PlayerName]
+```
+
+
+```{r}
+library(factoextra)
+library(reshape2)
+set.seed(155)
+km.res <- kmeans(acumulados_player[,-1], 18)
+acumulados_player$cluster<-km.res$cluster
+
+quinteto_ideal<-c("MICIC, VASILIJE","LARKIN, SHANE","DATOME, LUIGI","MIROTIC, NIKOLA","TAVARES, WALTER")
+
+i <-1
+aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
+distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
+nombres_cluster<-acumulados_player[acumulados_player$cluster==aux,]$PlayerName
+df <- melt(as.matrix(distancias), varnames = c("row", "col"))
+df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
+df2$nombre<-nombres_cluster
+df2<- df2[order(df2$value),] 
+print("Recomendaciones Base")
+print(head(df2$nombre[df2$row!=df2$col],5))
+
+i <-2
+aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
+distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
+nombres_cluster<-acumulados_player[acumulados_player$cluster==aux,]$PlayerName
+df <- melt(as.matrix(distancias), varnames = c("row", "col"))
+df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
+df2$nombre<-nombres_cluster
+df2<- df2[order(df2$value),] 
+print("Recomendaciones Escolta")
+print(head(df2$nombre[df2$row!=df2$col],5))
+
+i <-3
+aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
+distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
+nombres_cluster<-acumulados_player[acumulados_player$cluster==aux,]$PlayerName
+df <- melt(as.matrix(distancias), varnames = c("row", "col"))
+df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
+df2$nombre<-nombres_cluster
+df2<- df2[order(df2$value),] 
+print("Recomendaciones Alero")
+print(head(df2$nombre[df2$row!=df2$col],5))
+
+i <-4
+aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
+distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
+nombres_cluster<-acumulados_player[acumulados_player$cluster==aux,]$PlayerName
+df <- melt(as.matrix(distancias), varnames = c("row", "col"))
+df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
+df2$nombre<-nombres_cluster
+df2<- df2[order(df2$value),] 
+print("Recomendaciones Ala Pívot")
+print(head(df2$nombre[df2$row!=df2$col],5))
+
+i <-5
+aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
+distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
+nombres_cluster<-acumulados_player[acumulados_player$cluster==aux,]$PlayerName
+df <- melt(as.matrix(distancias), varnames = c("row", "col"))
+df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
+df2$nombre<-nombres_cluster
+df2<- df2[order(df2$value),] 
+print("Recomendaciones Pívot")
+print(head(df2$nombre[df2$row!=df2$col],5))
+```
+
+
 ****
 # Exportación de datos finales
 
