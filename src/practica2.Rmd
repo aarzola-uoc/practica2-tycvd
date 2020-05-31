@@ -1549,6 +1549,9 @@ Si comparamos la posición real en la clasificación con la posición de cada eq
 
 \newpage
 ## Correlaciones
+Estos gráficos son complementarios a los presentados en la sección 5.2, de manera más visual.
+En probabilidad y estadística, la correlación indica la fuerza y la dirección de una relación lineal y proporcionalidad entre dos variables estadísticas. Se considera que dos variables cuantitativas están correlacionadas cuando los valores de una de ellas varían sistemáticamente con respecto a los valores homónimos de la otra: si tenemos dos variables (A y B) existe correlación entre ellas si al disminuir los valores de A lo hacen también los de B y viceversa. La correlación entre dos variables no implica, por sí misma, ninguna relación de causalidad.
+
 ```{r,eval=TRUE,echo=TRUE}
 ggcorrplot(corr_ataque, type = "upper", lab = TRUE)
 ggcorrplot(corr_defensa, type = "upper", lab = TRUE)
@@ -1556,6 +1559,8 @@ ggcorrplot(corr_defensa, type = "upper", lab = TRUE)
 
 \newpage
 ## Curva ROC
+La curva ROC es la representación de la razón o ratio de verdaderos positivos (VPR = Razón de Verdaderos Positivos) frente a la razón o ratio de falsos positivos (FPR = Razón de Falsos Positivos) también según se varía el umbral de discriminación (valor a partir del cual decidimos que un caso es un positivo). La idea de la curva ROC es que tenga la mayor área bajo la curva posible y, en general, nos interesa que la pendiente al principio sea muy elevada para disparar el área de captura de verdaderos positivos en relación a los errores cuanto antes.
+
 ```{r,eval=TRUE,echo=TRUE}
 plot.roc( rocobj, legacy.axes = TRUE, print.thres = "best", 
           print.auc = TRUE, auc.polygon = FALSE, max.auc.polygon = FALSE, 
@@ -1566,7 +1571,13 @@ plot.roc( rocobj, legacy.axes = TRUE, print.thres = "best",
 \newpage
 # Conclusión
 
-FALTA POR HACER
+Como conclusión al trabajo, queríamos destacar:
+- El Data Science tiene infinidad de campos a los que contribuir con su crecimiento y el deporte profesional es uno de ellos, donde además, su uso por lo general apenas está explotado.
+- La creación de nuevos estadísticos que depuren los datos y mejoren la percepción de los mismos, es uno de los puntos donde se está poniendo el foco. 
+- Uno de los mayores problemas a la hora de analizar datos del mundo profesional es la mala calidad de las bases de datos. Somos consciente de que nuestra aproximación es una demostración de que la Ciencia de Datos puede servir como apoyo al baloncesto pero que no es realista desde el putno de vista de interpretación. Para ser más precisos es necesario bases de datos de calidad mayor, en los que se analice con más detalle los jugadores (veces que botan por derecha o izquierda), los quintetos con los que juegan (no es lo mismo jugar con un buen base a la hora de obtener tiros que con un base flojo), los rivales o el mometno en el que se toman las estad´siticas (es obvio qeu meter una canasta en los minutos finales o clutch es mucho más valorado que los jugadores cuyo mejor performance es al principio o en partidos resueltos).
+- Las aplicaciones de la Ciencia de datos al baloncesto son infinitas y de distintas aplicaciones, desde el entrenador que realiza el scouting y plantea el partido, el que analiza el resultado y los fallos que se han tenido o incluso la hora de que el director técnico confeccione el equipo.
+- Entendemos la ciencia sobre los datos como un complemento necesario a la hora de tomar decisiones en el día a día de deporte, pero no como un sustitutivo de las personas. Al final, siempre que se trabaja con personas hay muchos datos que son imposibles de medir y que podrían contribuir a la hora, por ejemplo, de crear tu plantilla en pretemporada.
+
 
 ****
 # Contribuciones al trabajo
