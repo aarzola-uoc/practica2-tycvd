@@ -1259,7 +1259,6 @@ print(rocobj)
 En este caso, el ROC es de 99.4%, es decir, de nuevo tenemos un modelo casi perfecto.
 
 
-\newpage
 ## Clustering de jugadores
 
 El último paso de este proyecto es ambicioso. Nos ponemos en la piel del director deportivo de uno de los equipos con un proyecto con recursos limitados.
@@ -1273,18 +1272,20 @@ Para ello, nos piden soporte. Planteamos para ello un proyecto que se dividirá 
 * Búsqueda de jugadores de perfil similar.
 * Presentación del informe.
 
-Comencemos depurando los datos. Para ello, eliminaremos del registro aquellos registros en los que el jugador en cuestión haya jugado menos minutos de los que consideramos relevantes. 
+**Depuración de datos.**
 
-Para comenzar, eliminamos los registros de aquellos jugadores en un partido en el que han jugado menos de un cuarto (salvo que el motivo sea por expulsión).
+Comencemos depurando los datos. Para ello, eliminaremos del dataframe aquellos registros en los que el jugador en cuestión haya jugado menos minutos de los que consideramos relevantes, que lo delimitamos en un cuarto (salvo que el motivo sea por expulsión).
+
 ```{r,eval=TRUE,echo=TRUE}
 data_players_relevant <- data_players[data_players$Min>10 | data_players$Cm.x==5,]
 ```
 
 Hemos reducido la muestra `r nrow(data_players) - nrow(data_players_relevant)` registros.
 
-El siguiente paso será calcular el número total de partidos jugados por jugador.
+Buscaremos ahora eliminar aquellos jugadorse que no hayan jugado un número mínimo de partidos, ya que queremos un análisis estable y no que esté influenciado por un mal o buen rendimiento de un solo partido.
 
 Seleccionamos aquellos jugadores que al menos hayan jugado un 20% de los partidos. Es decir, 6 partidos.
+
 ```{r,eval=TRUE,echo=TRUE}
 jugador_partido <- data.frame(table(data_players_relevant$PlayerName))
 colnames(jugador_partido)[1]<-"PlayerName"
@@ -1307,7 +1308,9 @@ data_players_cluster <- data_players_relevant[,c("PlayerName", "Assist_pct", "Tu
                                                  "Block_pct")]
 ```
 
-Aplicamos ahora el algoritmo kNN.
+Aplicamos ahora el algoritmo k-Means que nos dará, los jugadores que más se parezcan en función de los estadísticos seleccionados en el paso anterior y la distancia entre los mismos. Cada factor tendrá el mismo peso.
+
+Preparamos pues los datos agrupándolos por juador para todos los partidos:
 
 ```{r,eval=TRUE,echo=TRUE}
 dt <- data.table(data_players_cluster)
@@ -1327,15 +1330,21 @@ Steal_pct=mean(Steal_pct),
 Block_pct=mean(Block_pct)),by=PlayerName]
 ```
 
-
+Aplicamos ahora el algoritmo k-means:
 ```{r,eval=TRUE,echo=TRUE}
-set.seed(155)
-km.res <- kmeans(acumulados_player[,-1], 18)
+set.seed(121)
+km.res <- kmeans(acumulados_player[,-1], 15)
 acumulados_player$cluster<-km.res$cluster
+```
 
-quinteto_ideal<-c("MICIC, VASILIJE","LARKIN, SHANE","DATOME, 
-                  LUIGI","MIROTIC, NIKOLA","TAVARES, WALTER")
+Definimos el quinteto ideal y vamos a dar alternativas por puesto:
+```{r}
+quinteto_ideal<-c("MICIC, VASILIJE","LARKIN, SHANE","DATOME, LUIGI",
+                  "SHENGELIA, TORNIKE", "TAVARES, WALTER")
+```
 
+Calculamos los jugadores que comparten cluster con Micic. De ellos, escogeremos los que tengan los atributos en general más parecidos, o lo que es lo mismo, los que menos distancia entre su vector de atributos tengan.
+```{r}
 i <-1
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1346,7 +1355,19 @@ df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
 print("Recomendaciones Base")
 print(head(df2$nombre[df2$row!=df2$col],5))
+```
 
+Como comprobamos, las recomendaciones son basante acertadas. Cinco bases, con un perfil relativamente anotador:
+- Sergio Rodríguez.
+- Malcolm Delaney.
+- Theo Maledon.
+- Maodo Lo
+- Sam Van Rossom.
+
+Si tuviearmos un listado con posibles salarios, podríamos adaptar el problema a optimizar nuestro presupuesto.
+
+Analicemos ahora las recomendacioens para el puesto de escolta:
+```{r}
 i <-2
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1357,7 +1378,11 @@ df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
 print("Recomendaciones Escolta")
 print(head(df2$nombre[df2$row!=df2$col],5))
+```
+En este caso nos recomienda de nuevo a jugadores del perfil anotador de Larkin. John Dibartolomeo, immer Fredette, James Nunally y Rokas Giedriatis.. Sin embargo, nos llama la atención la aparición de Nikola Mirotic en esta lista, un jugador de perfil interior. Analizando en más detalle, vemos qeu sus datos en cuanto a importancia del lanzamiento exterior o creación de juego (estadísticos relacionados con asistencias) son más propios de un jugador exterior.
 
+Queremos encontrar ahora candidatos al puesto de alero:
+```{r}
 i <-3
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1368,7 +1393,11 @@ df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
 print("Recomendaciones Alero")
 print(head(df2$nombre[df2$row!=df2$col],5))
+```
+Como alternativas a Gigi Datome, nos presenta Ron Baker, Petteri Koponen, Jaycee Carroll, Aaron Doornekamp y Alex Abrines. Aleros con características de tirador. 
 
+Si analizamos ahora las alternativas al puesto de ala pívot, el algoritmo nos da:
+```{r}
 i <-4
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1379,7 +1408,11 @@ df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
 print("Recomendaciones Ala Pívot")
 print(head(df2$nombre[df2$row!=df2$col],5))
+```
+como opción a Livio Jean-Charles, una de las sopresas de la temporada de Asvel, Cory Higgins, Adrien Moerman, Konstantinos Mitoglou o Vladimir Micov.
 
+Por último para alternativas a uno de los mejores cincos de la competición pero con un caché muy elevado (Walter Tavares), obtenemos:
+```{r}
 i <-5
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1391,6 +1424,10 @@ df2<- df2[order(df2$value),]
 print("Recomendaciones Pívot")
 print(head(df2$nombre[df2$row!=df2$col],5))
 ```
+a Ahmet Duveriouglu, Kyle Hines del CSKA, Colton Iverson de Zénit y Jan Vesely.
+
+En conclusión, hemos obtenido unas cuantas alternativas que podríamos encontrar en el mercado a estos jugadores.
+
 
 ****
 
