@@ -21,9 +21,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r,eval=TRUE,echo=FALSE}
 # Definir directorio de trabajo para Miguel
-setwd("C:/Users/USER-PC/Desktop/tipologia")
+#setwd("C:/Users/USER-PC/Desktop/tipologia")
 # Definir directorio de trabajo para Alejandro
-#setwd('/Users/aarzola/Desktop/UOC/1920.S2 - Tipología y ciclo de vida de los datos/PEC_PRAC/PRAC_2/src')
+setwd('/Users/aarzola/Desktop/UOC/1920.S2 - Tipología y ciclo de vida de los datos/PEC_PRAC/PRAC_2/src')
 ```
 
 \newpage
@@ -789,7 +789,7 @@ Donde:
 * FGA: Tiros de Campo intentados.
 * FTA: Tiros Libres intentados.
 
-**Explicación***
+**Explicación**
 
 Sin embargo, antes de explicar exactamente qué hace esta estadística, nos gustaría centrarnos en el denominador entre paréntesis del cálculo anterior: (FGA + 0.44 * FTA + TO). Esta expresión matemática es la mejor manera de cuantificar el número de resultados de juego en los que estuvo involucrado un jugador sin realmente contar.
 
@@ -814,6 +814,7 @@ data_players$Turnover_pct<-ifelse((data_players$x2A.x+data_players$x3A.x+
                                                        data_players$To.x))
 ```
 
+\newpage
 ### Offensive Rebound Percentage (ORB%)
 
 \[
@@ -828,7 +829,7 @@ Donde:
 * TORB: Rebotes ofensivos del equipo.
 * ODRB: Rebotes ofensivos del equipo rival.
 
-**Explanation**
+**Explicación**
 
 Cada vez que un tiro sale del aro, hay cuatro resultados posibles: el balón podría salirse de los límites del campo y contarse como un rebote del equipo defensivo; la pelota podría rebotar de un jugador defensivo y salirse de los límites para ser contada como un rebote ofensivo del equipo; la pelota podría ser caputra por un jugador defensivo y contarse como un rebote defensivo; o un jugador ofensivo podría capturar la pelota y contarse como un rebote ofensivo.
 
@@ -851,6 +852,7 @@ data_players$Defensive_Reb_pct <- data_players$D.x*(data_players$Min.x/5)/
   (data_players$Min*(data_players$D.y+data_players$O_Opp))
 ```
 
+\newpage
 ### Effective Field-Goal Percentage (eFG%)
 
 \[
@@ -1544,13 +1546,14 @@ plot.roc( rocobj, legacy.axes = TRUE, print.thres = "best",
 # Conclusión
 
 Como conclusión al trabajo, queríamos destacar:
-- El Data Science tiene infinidad de campos a los que contribuir con su crecimiento y el deporte profesional es uno de ellos, donde además, su uso por lo general apenas está explotado.
-- La creación de nuevos estadísticos que depuren los datos y mejoren la percepción de los mismos, es uno de los puntos donde se está poniendo el foco. 
-- Uno de los mayores problemas a la hora de analizar datos del mundo profesional es la mala calidad de las bases de datos. Somos consciente de que nuestra aproximación es una demostración de que la Ciencia de Datos puede servir como apoyo al baloncesto pero que no es realista desde el putno de vista de interpretación. Para ser más precisos es necesario bases de datos de calidad mayor, en los que se analice con más detalle los jugadores (veces que botan por derecha o izquierda), los quintetos con los que juegan (no es lo mismo jugar con un buen base a la hora de obtener tiros que con un base flojo), los rivales o el mometno en el que se toman las estad´siticas (es obvio qeu meter una canasta en los minutos finales o clutch es mucho más valorado que los jugadores cuyo mejor performance es al principio o en partidos resueltos).
-- Hay muchas más métricas de ataque que de defensa, por lo que es dificil darle el mismo valor a ambos a la hora de realizar análisis estadísticos.
-- Las aplicaciones de la Ciencia de datos al baloncesto son infinitas y de distintas aplicaciones, desde el entrenador que realiza el scouting y plantea el partido, el que analiza el resultado y los fallos que se han tenido o incluso la hora de que el director técnico confeccione el equipo.
-- Entendemos la ciencia sobre los datos como un complemento necesario a la hora de tomar decisiones en el día a día de deporte, pero no como un sustitutivo de las personas. Al final, siempre que se trabaja con personas hay muchos datos que son imposibles de medir y que podrían contribuir a la hora, por ejemplo, de crear tu plantilla en pretemporada. 
-- La dinámica obviamente está cambiando y el ejemplo de la NBA es el más inmediato, donde todas las franquicias tienen un equipo de más de treinta personas trabjaando en Big Data & Advanced Analytics dando soporte a las decisiones.
+
+* El Data Science tiene infinidad de campos a los que contribuir con su crecimiento y el deporte profesional es uno de ellos, donde además, su uso por lo general apenas está explotado.
+* La creación de nuevos estadísticos que depuren los datos y mejoren la percepción de los mismos, es uno de los puntos donde se está poniendo el foco. 
+* Uno de los mayores problemas a la hora de analizar datos del mundo profesional es la mala calidad de las bases de datos. Somos consciente de que nuestra aproximación es una demostración de que la Ciencia de Datos puede servir como apoyo al baloncesto pero que no es realista desde el putno de vista de interpretación. Para ser más precisos es necesario bases de datos de calidad mayor, en los que se analice con más detalle los jugadores (veces que botan por derecha o izquierda), los quintetos con los que juegan (no es lo mismo jugar con un buen base a la hora de obtener tiros que con un base flojo), los rivales o el mometno en el que se toman las estadísticas (es obvio qeu meter una canasta en los minutos finales o clutch es mucho más valorado que los jugadores cuyo mejor performance es al principio o en partidos resueltos).
+* Hay muchas más métricas de ataque que de defensa, por lo que es dificil darle el mismo valor a ambos a la hora de realizar análisis estadísticos.
+* Las aplicaciones de la Ciencia de datos al baloncesto son infinitas y de distintas aplicaciones, desde el entrenador que realiza el scouting y plantea el partido, el que analiza el resultado y los fallos que se han tenido o incluso la hora de que el director técnico confeccione el equipo.
+* Entendemos la ciencia sobre los datos como un complemento necesario a la hora de tomar decisiones en el día a día de deporte, pero no como un sustitutivo de las personas. Al final, siempre que se trabaja con personas hay muchos datos que son imposibles de medir y que podrían contribuir a la hora, por ejemplo, de crear tu plantilla en pretemporada. 
+* La dinámica obviamente está cambiando y el ejemplo de la NBA es el más inmediato, donde todas las franquicias tienen un equipo de más de treinta personas trabjaando en Big Data & Advanced Analytics dando soporte a las decisiones.
 
 
 ****
