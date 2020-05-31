@@ -1138,26 +1138,73 @@ Puesto que obtenemos un p-valor superior a 0,05, aceptamos la hipótesis de que 
 \newpage
 ## Regresión lineal para estimar los ratings
 
+Una de las primeras conclusiones a las que hemos llegado es que podemos darnos una idea muy buena de cuál será el rendimiento de un equipo en función del Rating Ofensivo y del Rating Defensivo. 
+
+Pero, ¿Cómo podemos estimar dichos Ratings en base a las variables recogidas en la estadística?
+
+Uno de los primeros estadísticos dedicados al anáisis de los datos para el deporte fue el estadounidense Dean Olliver. Él decía que el rendimiento de un equipo depende de cuatro factores fundamentales anteriormente definidios:
+- eFG.
+- Offensive Rebounding Percentage. 
+- Turnover Percentage.
+- Free Throw Rate
+
+Proponemos, por tanto, estimar el rating ofensivo en base a los cuatro factores de ataque y el defensivo en función de los cuatro factores de defensa.
+
+Para ello nos valdremos de una regresión lineal.
+
+**Rating ofensivo en función de los Four Factors de Dean Olliver**
+
+Comencemos pues por el rating ofensivo. El primer paso que daremos para resolver el problema, será el de calcular la correlación entre las variables explicativas.
+
 ```{r,eval=TRUE,echo=TRUE}
 # Rating de ataque
 data_teamopp["Off_Reb_Opp"]<-1-data_teamopp["Def_Reb"]
 
 data_ataque <- data_teamopp[c("Off_Rat","eFG","Off_Reb","Pct_To","FTR")]
 corr_ataque <- round(cor(data_ataque),2)
+corr_ataque
+```
+Llegamos a una primer conclusión importante. Las variables, guardan relación lineal con la variable objetivo (especialmente eFG y porcentaje de pérdidas) pero son independientes entre sí.
 
+Modelicemos pues, el rating ofensivo en función de los cuatro factores propuestos:
+
+```{r}
 model_offesive_rating<- lm(Off_Rat~., data=data_ataque)
 summary(model_offesive_rating)
 ```
+La fórmula obtenida es por tanto:
+$Rating\_Ofensivo=0.315316+1.465926eFG+0.645129Off\_Reb-1.398715Pct\_To+0.333343FTR$
 
-\newpage
+Analizando la tabla de coeficientes, vemos que todas las variables aportan valor.
+
+Por último, su $R^2$ ajustado es de 98%. Es decir, nos encontramos ante un ajuste realmente bueno.
+
+Repitamos el análisis para el Rating Defensivo.
+
+**Rating defensivo en función de los Four Factors de Dean Olliver**
+
 ```{r,eval=TRUE,echo=TRUE}
 # Rating de defensa
 data_defensa <- data_teamopp[c("Def_Rat","eFG_Opp","Off_Reb_Opp","Pct_To_opp","FTR_opp")]
 corr_defensa <- round(cor(data_defensa),2)
+corr_defensa
+```
+Como era de suponer, las conclusiones obtenidas en el análisis de correlación son análogas a las del apartado anterior en cuando a pesos e independencia lineal de la variables.
 
+Modelizamos ahora el rating defensivo:
+```{r}
 model_defensive_rating<- lm(Def_Rat~., data=data_defensa)
 summary(model_defensive_rating)
 ```
+La fórmula obtenida es por tanto:
+$Rating\_Defensivo=0.32545+1.46506eFG\_Opp+0.64297Off\_Reb\_Opp-1.33526Pct\_To\_Opp+0.24327FTR\_Opp$
+
+Analizando la tabla de coeficientes, vemos que todas las variables aportan valor.
+
+Por último, su $R^2$ ajustado es de 93.4%. Es decir, algo peor que para el caso del rating ofensivo pero de nuevo un ajuste muy bueno.
+
+En conclusión, podemos estimar el rating ofensivo y defensivo de un equipo en base a solo cuatro variables construidas desde su boxscore. Así, podremos estimar qué rating ofensivo podríamos esperar si logramos subir dos puntos el porcentaje de rebote por ejemplo o reducir el porcentaje de pérdidas.
+
 
 \newpage
 ## Regresión logística para estimar victoria
