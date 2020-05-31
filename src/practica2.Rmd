@@ -731,7 +731,7 @@ data_teamopp ["Expected_Wins"] <- data_teamopp["Off_Rat"]^14 /
 \newpage
 ## Creación de nuevas métricas de jugadores
 
-Una vez definidas los nuevos estadísticos para el datser de equipos, realizaremos el mismo trabajo para el dataset de jugadores. De esta forma contaremos con nuevas variables que permitan determinar con mayor precisión la calidad y participación de los jugadores en un partido.
+Una vez definidas los nuevos estadísticos para el dataset de equipos, realizaremos el mismo trabajo para el dataset de jugadores. De esta forma contaremos con nuevas variables que permitan determinar con mayor precisión la calidad y participación de los jugadores en un partido.
 
 Para obtener estos estadísticos nos hemos basado en un artículo de la página web **Bleacher Report** donde se explican métricas y estadísticas avanzadas para la NBA. Se puede acceder al artículo haciendo [\textcolor{blue}{click aquí}](https://bleacherreport.com/articles/1039116-understanding-the-nba-explaining-advanced-offensive-stats-and-metrics).
 
@@ -749,31 +749,28 @@ data_players <- merge(data_euroleague, data_teamopp, by=c("MatchId","Team"))
 
 Donde: 
 
-* A: Assists.
-* MP: Minutes Played.
-* TMP: Team Minutes Played.
-* TFG: Team Field Goals. 
-* FG:Field Goals.
+* A: Asistencias.
+* MP: Minutos jugados por el jugador.
+* TMP: Minutos jugados por el equipo.
+* TFG: Tiros de campo del equipo. 
+* FG: Tiros de campo del jugador.
 
-Explanation
+**Explicación**
 
-Leading off this guide to advanced offensive metrics in the NBA is perhaps the most basic of the stats: assist percentage. I say perhaps "basic" because it's one of many tempo-free stats, or stats adjusted for pace and volume. 
+Si bien las asistencias en sí mismas son bastante útiles para observar, el porcentaje de asistencias es una estadística mucho mejor para describir la habilidad del jugador. Las estadísticas de asistencia se pueden completar de dos maneras: la cantidad de tiempo que un jugador está en la cancha y el ritmo al que juega su equipo.
 
-While assists in themselves are kind of useful to look at, assist percentage is a much better statistic to cite when trying to make a case for a player's skill in the passing department. Assist stats can be padded by two things: the amount of time that a player is on the court and the pace at which his team plays.
+Un jugador en un equipo de ritmo rápido como Miami Heat o Washington Wizards tendrá más oportunidades ofensivas para acumular asistencias, lo que generará un mayor número de asistencias por partido y por minuto.
 
-A player on a fast-paced team like the Miami Heat or Washington Wizards is going to have more offensive opportunities to rack up counting stats, leading to elevated numbers of assists per game and assists per minute (which are also a better way of looking at assists than just assists by themselves).
+Del mismo modo, un jugador que juega 35 minutos por juego tendrá más oportunidades de generar asistencias que un jugador en la cancha durante 20 minutos por partido. Puede parecer de sentido común que promediar 10 asistencias por juego en 20 minutos de acción por competencia es más impresionante que promediar 10 asistencias por juego en 35 minutos de acción por competencia, pero esa distinción se pierde cuando solo se citan asistencias por partido.
 
-Similarly, a player who plays 35 minutes per game is going to have more opportunities to generate assists than a player on the court for 20 minutes per game. It may seem like common sense that averaging 10 assists per game in 20 minutes of action per contest is more impressive than averaging 10 assists per game in 35 minutes of action per contest, but that distinction is lost when only assists per game is cited.    
+La métrica esencialmente estima (estima, no calcula) qué porcentaje de tiros realizados por los compañeros de equipo fueron asistidos por un jugador mientras estaba en la cancha.
 
-Because assist percentage is free from the effects of pace and volume, it's a better indication of how effective a player is at racking up the dimes during each and every one of the team's possessions. 
+**Limitaciones**
 
-The stat essentially estimates (note: estimates, not calculates) what percentage of made shots by teammates were assisted by a player while he was on the floor.
+Sin tener el detalle de las jugadas por partido, lo mejor que puede hacer esta estadística es proporcionar una estimación del porcentaje antes mencionado. No hay forma de medir y dar crédito a los buenos pases que resultaron en tiros liberados pero fallados o pérdidas por parte del receptor.
 
-Limitations
+Al igual que con cualquier estadística de asistencia, un jugador está a merced de la habilidad de sus compañeros de equipo.
 
-Without looking at play-by-play data, the best this stat can do is provide an estimate of the aforementioned percentage it is meant to calculate. Additionally, there is no way to measure and give credit for good passes that resulted in missed open looks.
-
-Just as with any assist statistic, a player is at the mercy of the skill of his teammates. 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Assist_pct <- data_players$As.x/(((data_players$Min/(data_players$Min.x/5))*
                                                  (data_players$x2A.y+data_players$x3A.y))-
@@ -788,32 +785,25 @@ data_players$Assist_pct <- data_players$As.x/(((data_players$Min/(data_players$M
 
 Donde:
 
-* TO: Turnovers.
-* FGA: Field Goals Attempted.
-* FTA: Free Throws Attempted.
+* TO: Pérdidas 
+* FGA: Tiros de Campo intentados.
+* FTA: Tiros Libres intentados.
 
-Explanation
+**Explicación***
 
-The second of the offensive tempo-free stats, turnover percentage, is free from the effects of tempo because it isolates the possessions in which the player in question made a box score impact.
+Sin embargo, antes de explicar exactamente qué hace esta estadística, nos gustaría centrarnos en el denominador entre paréntesis del cálculo anterior: (FGA + 0.44 * FTA + TO). Esta expresión matemática es la mejor manera de cuantificar el número de resultados de juego en los que estuvo involucrado un jugador sin realmente contar.
 
-Before explaining exactly what this stat does though, I'd like to focus on the parenthetical denominator of the above calculation: (FGA+0.44*FTA+TO). This mathematical expression is the best way of quantifying the number of play results a player was involved in without simply going back through every box score and actually counting.
+Hay tres formas en que un jugador puede participar en el resultado final de una posesión. Pueden intentar un tiro de campo, pueden terminar en la línea de personal o pueden dar perder el balón. Sin embargo, simplemente sumar esos tres resultados no proporciona el número de posesiones porque los tiradores pueden intentar uno, dos o tres tiros libres en cualquier posesión dada. En base a los últimos años, se ha estimado que el coeficiente de tiros libres que representan el último tiro es el 44% de los tirados.
 
-There are three ways that a player can be involved in the end result of a possession. They can attempt a field goal (regardless of whether it's a two-pointer or a three-pointer), they can end up on the foul line or they can turn the ball over. However, simply summing those three results does not provide the number of possessions because shooters can attempt either one, two or three free throws on any given possession. 
+Entonces, ahora que lo hemos eliminado, todo lo que esta estadística realmente hace es calcular el número de pérdidas de balón que un jugador hará en 100 jugadas individuales.
 
-Box scores don't explain how many shots a player was fouled on, so we have no idea of knowing which fouls resulted in and-ones (for example) without looking through historical play-by-play data.
+Las pérdidas de balón y las pérdidas de balón por partido dependen una vez más del ritmo de juego y de la cantidad de tiempo que un jugador pasa en la cancha. Esta estadística de tasas elimina esos efectos y se enfoca únicamente en el porcentaje de veces que un jugador pierde la pelota en comparación con la cantidad de veces que está involucrado en el juego de manera directa.
 
-Just trust on this one (I've read the studies and they're too complicated to explain in a short space) and accept the fact that the 0.44 multiplier is the best way of estimating the total number of possessions a player is involved in. 
+**Limitaciones**
 
-So now that we've got that out of the way, all this stat really does is calculate the number of turnovers a player will make in 100 individual plays.
+El porcentaje de pérdidas aún no puede tener en cuenta los pases que un jugador hace que no generan pérdidas de balón (es decir, asiste o pasa a otros jugadores que fallan un tiro o no tiran).
 
-Turnovers and turnovers per game are both dependent once more on pace of play and the amount of time a player spends on the court. This rate statistic eliminates those detriments and focuses solely on the percentage of times a player turns the ball over compared to the amount of times they're involved in the play.  
-
-
-Limitations
-
-Turnover percentage still can't factor in the passes that a player makes that result in non-turnovers (i.e. assists or passes to other players who either miss a shot or don't shoot).
-
-Therefore, it's still a fairly limited stat because it only focuses on the true outcomes of possessions when that player is involved. 
+Por lo tanto, sigue siendo una estadística bastante limitada.
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Turnover_pct<-ifelse((data_players$x2A.x+data_players$x3A.x+
@@ -832,30 +822,25 @@ data_players$Turnover_pct<-ifelse((data_players$x2A.x+data_players$x3A.x+
 
 Donde:
 
-* ORB: Offensive Rebounds.
-* TMP: Team Minutes Played.
-* MP: Minutes Played.
-* TORB: Team Offensive Rebounds.
-* ODRB: Opponents Defensive Rebound.
+* ORB: Rebotes ofensivos.
+* TMP: Minutos jugados por el equipo.
+* MP: Minutos del jugador.
+* TORB: Rebotes ofensivos del equipo.
+* ODRB: Rebotes ofensivos del equipo rival.
 
+**Explanation**
 
-Explanation
+Cada vez que un tiro sale del aro, hay cuatro resultados posibles: el balón podría salirse de los límites del campo y contarse como un rebote del equipo defensivo; la pelota podría rebotar de un jugador defensivo y salirse de los límites para ser contada como un rebote ofensivo del equipo; la pelota podría ser caputra por un jugador defensivo y contarse como un rebote defensivo; o un jugador ofensivo podría capturar la pelota y contarse como un rebote ofensivo.
 
-Whenever a shot clanks off the rim, there are four possible outcomes: The ball could go out of bounds and be counted as a defensive team rebound; the ball could bounce of a defensive player and go out of bounds to be counted as an offensive team rebound; the ball could be pulled down by a defensive player and be counted as a defensive rebound; or the ball could be pulled down by an offensive player and be counted as an offensive rebound.
+Si se suman los cuatro resultados, cuentas todos los posibles rebotes en un juego.
 
-If you add up all four of those results, you account for all of the potential rebounds in a game.
+El porcentaje de rebote ofensivo calcula el porcentaje de rebotes ofensivos disponibles que un jugador toma mientras está en la cancha.
 
-Offensive rebound percentage calculates the percentage of available offensive rebounds that a player grabs while he's on the court.
+Al igual que las dos anteriores, no tiene en cuenta el ritmo o el volumen.
 
-This is the last of the commonly-used offensive tempo-free rate stats and much like the previous two, it doesn't account for pace or volume.   
+**Limitaciones**
 
-
-Limitations
-
-Once more, it's too much trouble to go back and retroactively look at all historical box scores. No one really wants to do that.
-
-Therefore, this is merely an estimate, albeit an accurate one.  
-
+De nuevo, sin tener el detalle de jugada a jugada, es simplemente una estimación, aunque precisa.
 
 De manera análoga, definimos el porcentaje de rebotes defensivos.
 ```{r,eval=TRUE,echo=TRUE}
@@ -874,36 +859,20 @@ data_players$Defensive_Reb_pct <- data_players$D.x*(data_players$Min.x/5)/
 
 Donde:
 
-* FG: Field Goals.
-* 3P: Three-Pointers.
-* FGA: Field-Goal Attempts.
+* FG: Tiros de Campo convertidos.
+* 3P: Triples convertidos.
+* FGA: Intentos de tiro de campo.
 
-Explanation
+**Explicación**
 
-Field-goal percentage (FG%) was once one of the better stats for estimating shooting ability up until the popularization of effective field-goal percentage in the 1990s. 
+El porcentaje de tiro de campo (% FG) fue una de las mejores estadísticas para estimar la capacidad de tiro hasta la popularización de esta métrica a principio de los años dos mil.
 
-The only difference between the two stats is that three-pointers are weighted more heavily in eFG%. Seeing as three-pointers are worth three points and two-pointers are worth two points, this makes sense.
+La única diferencia entre las dos estadísticas es que los triples tienen mayor peso en % de eFG. En vista de que los tres puntos valen tres puntos y los dos puntos valen dos puntos, esto tiene sentido.
 
-That may be the most ridiculously obvious sentence I've ever written. 
+**Limitaciones**
 
-Don't make the mistake of thinking that the multiplier in front of three-pointers should be 1.5 though. Essentially, it is in the above formula because three-pointers are counted one time in field goals and another 0.5 times on the other side of the addition sign.
+Si bien eFG% es una buena métrica, no tiene en cuenta los tiros libres.
 
-So, as for the merits of effective field-goal percentage, tell me which of the following players you'd rather have:
-
-Player A attempts 10 shots from the field, all from within the three-point arc, and drills five of them.
-
-Player B attempts 10 shots from the field, all from outside the three-point arc, and drills five of them.
-
-Player A, who was responsible for 10 points, has a FG% of 50 percent, just like Player B, who was responsible for 15 points, despite shooting the same number of times. However, Player A's eFG% was still 50 percent while Player B's was a much better 75 percent.    
-
-
-Limitations
-
-While I like eFG% as a stat, there is still a measure of shooting that is significantly better. If for nothing else, that's because it takes free-throw shooting into account as well, unlike eFG%. 
-
-You'll see what that stat is pretty soon. 
-
-Also, the penalty for missing a three-pointer is the same as the penalty for missing a two-pointer because all attempts are weighted the same. 
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$eFG_player<-ifelse((data_players$x3A.x+data_players$x2A.x)==0,0,
@@ -919,29 +888,25 @@ data_players$eFG_player<-ifelse((data_players$x3A.x+data_players$x2A.x)==0,0,
 
 Donde:
 
-* PT: Points.
-* FGA: Field-Goal Attempts.
-* FTA: Free-Throw Attempts.
+* PT: Puntos
+* FGA: Tiros de campo intentados.
+* FTA: Tiros libres intentaos.
 
+**Explicación**
 
-Explanation
+Hay tres formas en que un jugador puede anotar: triples, dos puntos y tiros libres. Simplemente tiene sentido que la mejor medida del porcentaje de tiro tomase en cuenta las tres posibles manera de anotación.
 
-There are three ways that an NBA player can score: three-pointers, two-pointers and free throws. It just makes sense that the best measure of shooting percentage would take all three of those methods of scoring into account. 
+Como puede ver en los "Intentos de tiros de campo" e "Intentos de tiro libre" en el cálculo, el% de TS claramente al menos tiene en cuenta dos puntos y tiros libres. En cuanto al multiplicador 0.44, se aplica el mismo razonamiento que para el porcentaje de pérdidas. 
 
-So, does true shooting percentage look at all three?
+Los triples son un poco más difíciles de encontrar en la fórmula, pero todavía están allí, escondidos dentro de la palabra "Puntos". El máximo% de TS es en realidad 150 por ciento y solo se puede lograr si un jugador realiza todos y cada uno de sus tiros y todos son del triple. Por ejemplo, si un jugador tira y anota una sola vez en un partido y es desde el triple, la fórmula se leerá y simplificará de la siguiente manera: 3 / (2 * 1 + 0.44 * 0)) = 3/2 = 1.5.
 
-As you can see by the "Field-Goal Attempts" and "Free-Throw Attempts" in the calculation, TS% clearly at least takes two-pointers and free throws into account. As for the 0.44 multiplier, the same reasoning applies as did for turnover percentage. You can find the full explanation on that slide.
+Debido a que esta estadística tiene en cuenta todo, es fácilmente la mejor medida de capacidad de tiro que tenemos. 
 
-Three-pointers are a little harder to find in the formula, but they're still there, hidden within the word "Points." The maximum TS% is actually 150 percent and can only be achieved if a player hits each and every one of his shots and they're all from downtown. For example, if a player goes 1-for-1 and his only shot is a three-pointer, the formula will read and simplify as follows: 3/(2*1+0.44*0)) = 3/2 = 1.5.
+**Limitaciones**
 
-Because this stat does take everything into account, it's easily the best measure of shooting ability we have. Just for the record, it can also be called adjusted shooting percentage, effective shooting percentage, effective percentage, points per shot attempted and scoring efficiency.  
+Además de tener en cuenta la capacidad de tiro y, por lo tanto, no calificar como una evaluación general de la capacidad ofensiva de un jugador, la única limitación verdadera del TS% es que es posible (aunque extremadamente improbable) tener un TS% de más del 100 por ciento.
 
-
-Limitations
-
-Other than only accounting for shooting ability, and thereby not qualifying as an overall evaluation of a player's offensive ability, the only true limitation of TS% is that it's possible (although extremely unlikely) to have a TS% of over 100 percent.
-
-Also, just like with effective field-goal percentage, all missed attempts count the same.  
+Además, al igual que con el porcentaje efectivo de tiros de campo, todos los intentos fallidos cuentan igual.
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$TS_player <- ifelse((2*(data_players$x3A.x+data_players$x2A.x+
@@ -958,20 +923,25 @@ data_players$TS_player <- ifelse((2*(data_players$x3A.x+data_players$x2A.x+
 \]
 
 
-Where FGA=Field-Goal Attempts, FTA=Free-Throw Attempts, TO=Turnovers, TMP=Team Minutes Played, MP=Minutes Played, TFGA=Team Field-Goal Attempts, TFTA=Team Free-Throw Attempts, TTO=Team Turnovers
+donde 
+* FGA=Intentos de tiro de campo
+* FTA=Intentos de tiro libre. 
+* TO=Pérdidas.
+* TMP=Minutos jugados por equipo.
+* MP=Minutos jugados.
+* TFGA=Tiros de campo intentados del equipo. 
+* TFTA=Tiros libres intentados del equipo.
+* TTO=Pérdidas del equipo.
 
+**Explicación**
 
-Explanation
+Este puede ser el cálculo de métricas más complicado hasta ahora, pero el concepto detrás de esto es realmente bastante simple. La tasa de uso calcula en qué porcentaje de las jugadas de equipo estuvo involucrado un jugador mientras estaba en la cancha, siempre que la jugada termine en uno de los tres resultados siguientes: tiro de campo, tiro libre o pérdida.
 
-This may be the most complicated looking calculation yet, but the concept behind it is really quite simple. Usage rate calculates what percentage of team plays a player was involved in while he was on the floor, provided that the play ends in one of the three true results: field-goal attempt, free-throw attempt or turnover.
+En promedio, por lo tanto, un jugador tendrá una tasa de uso del 20 por ciento.
 
-On average, a player will have a usage rate of 20 percent. Think about it and it will make perfect sense. 
+**Limitaciones**
 
-Limitations
-
-Only the true outcomes are measured here, so there is quite a bit left out. For example, a player like Ricky Rubio, who prefers to pass more than shoot will have a much lower USG% than a player who prefers to shoot.
-
-Yet, a player who passes the ball is still involved in a possession in my mind.   
+Aquí solo se miden los resultados reales, por lo que queda bastante fuera. Por ejemplo, un jugador como Ricky Rubio, que prefiere pasar más que tirar, tendrá un porcentaje de USG mucho menor que un jugador que tira mucho como Kobe Bryant.
 
 ```{r}
 data_players$Usage_rate <- 
@@ -989,28 +959,24 @@ data_players$Usage_rate <-
 
 Donde:
 
-* PT: Points.
-* FGA: Field-Goal Attempts.
-* FTA: Free-Throw Attempts.
-* TO: Turnovers.
+* PT: Puntos
+* FGA: Tiros de campo intentados.
+* FTA: Tiros libres intentados.
+* TO: Pérdidas.
 
+**Explicación**
 
-Explanation 
+El numerador está claramente representado por la palabra "Puntos". Realmente no hay explicación necesaria allí.
 
-The numerator is clearly represented by the word "Points." There is really no explanation necessary there. 
+Ya hemos visto cómo se pueden estimar mejor las posesiones por lo que está escrito en el denominador anterior. La explicación completa se proporciona en la diapositiva de porcentaje de pérdidas.
 
-Per refers to the division sign. 
+Esta estadística en su forma más simple explica cuán eficientemente un jugador usa su tiempo con la pelota para anotar. Con la ayuda de empresas como Synergy, el PPP puede desglosarse aún más en ciertas situaciones como situaciones de aclarado, situaciones de pick-and-roll, etc.
 
-We've already seen how possessions can be best estimated by what's written in the above denominator. The full explanation is provided on the turnover percentage slide. 
+**Limitaciones**
 
-This stat in its simplest form explains how efficiently a player uses his time with the ball to score. With the help of companies like Synergy, PPP can be further broken down into certain situations like isolation plays, pick-and-roll situations, etc. 
+Esta estadística solo se refiere a la eficiencia de puntuación y muchos aspectos importantes del baloncesto no se consideran.
 
-
-Limitations
-
-This stat only refers to scoring efficiency and there's more than scoring to basketball, even on offense. 
-
-Other than that and the fact that the possessions are estimates, there aren't too many limitations to PPP. 
+Aparte de eso y el hecho de que las posesiones son estimaciones, no hay demasiadas limitaciones para PPP.
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Points_per_possesion <-ifelse((data_players$x3A.x+data_players$x2A.x+
@@ -1020,10 +986,13 @@ data_players$Points_per_possesion <-ifelse((data_players$x3A.x+data_players$x2A.
                                                 0.44*data_players$FTA.x+data_players$To.x))
 ```
 
-### Free Throw Rate
 
 Completamos los estadísticos con los encontrados en:
 https://www.fromtherumbleseat.com/pages/advanced-basketball-statistics-formula-sheet
+
+### Free Throw Rate
+
+
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$FTR_player <- ifelse((data_players$x2A.x+data_players$x3A.x)==0,
@@ -1037,7 +1006,8 @@ data_players$FTR_player <- ifelse((data_players$x2A.x+data_players$x3A.x)==0,
   \makebox[\linewidth]{$hAST\% = AST / (FGA + .44 * FTA + AST + TOV)$}
 \]
 
-Think of Carmelo Anthony for this statistic, it is a "ball stopper" stat. This divides the number of assists a player has by the number of offensive possessions that end in that player's hands.
+
+Miden a los jugadores idividualistas y relacionan lo que generan en relación a la vez que acaban la jugada. Esto divide la cantidad de asistencias que tiene un jugador por la cantidad de posesiones que terminan en las manos de ese jugador.
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Hollinger_Assist_ratio <- ifelse((data_players$x2A.x+data_players$x3A.x+0.44*
@@ -1058,7 +1028,7 @@ data_players$Hollinger_Assist_ratio <- ifelse((data_players$x2A.x+data_players$x
 \]
     
 
-The percentage of teammate baskets a player assisted on while he was on the court - my preferred Assists statistic
+Estimación del porcentaje de canastas de compañeros de equipo en las que asistió un jugador mientras estaba en la cancha.
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Pomeroy_Assist_ratio <- data_players$As.x/
@@ -1074,7 +1044,7 @@ data_players$Pomeroy_Assist_ratio <- data_players$As.x/
 \]
     
 
-Percent of opponent possessions in which a player gets a steal
+Porcentaje de posesiones del oponente en las que un jugador obtiene un robo.
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Steal_pct<-data_players$St.x/
@@ -1087,7 +1057,9 @@ data_players$Steal_pct<-data_players$St.x/
   \makebox[\linewidth]{$BLK\% = BLK / ((MP / (TmMP / 5 )) * (OppFGA - Opp3PA))$}
 \]
 
-Percent of opponents' "blockable" shots that the player blocks (removes 3 point shots, as these are generally not "blockable", somewhat arbitrary since you see these blocked and a mid range jump shot is just as unlikely to be blocked, yet is included in the sample)
+
+265/5000
+Porcentaje de tiros "taponables" de los oponentes que el jugador bloquea (elimina los tiros de 3 puntos, ya que estos generalmente no son "taponables", algo arbitrario ya que los ves bloqueados y es poco probable que un tiro de salto de medio alcance sea bloqueado, pero es incluido en la muestra)
 
 ```{r,eval=TRUE,echo=TRUE}
 data_players$Block_pct<-data_players$Fv.x/
@@ -1575,8 +1547,10 @@ Como conclusión al trabajo, queríamos destacar:
 - El Data Science tiene infinidad de campos a los que contribuir con su crecimiento y el deporte profesional es uno de ellos, donde además, su uso por lo general apenas está explotado.
 - La creación de nuevos estadísticos que depuren los datos y mejoren la percepción de los mismos, es uno de los puntos donde se está poniendo el foco. 
 - Uno de los mayores problemas a la hora de analizar datos del mundo profesional es la mala calidad de las bases de datos. Somos consciente de que nuestra aproximación es una demostración de que la Ciencia de Datos puede servir como apoyo al baloncesto pero que no es realista desde el putno de vista de interpretación. Para ser más precisos es necesario bases de datos de calidad mayor, en los que se analice con más detalle los jugadores (veces que botan por derecha o izquierda), los quintetos con los que juegan (no es lo mismo jugar con un buen base a la hora de obtener tiros que con un base flojo), los rivales o el mometno en el que se toman las estad´siticas (es obvio qeu meter una canasta en los minutos finales o clutch es mucho más valorado que los jugadores cuyo mejor performance es al principio o en partidos resueltos).
+- Hay muchas más métricas de ataque que de defensa, por lo que es dificil darle el mismo valor a ambos a la hora de realizar análisis estadísticos.
 - Las aplicaciones de la Ciencia de datos al baloncesto son infinitas y de distintas aplicaciones, desde el entrenador que realiza el scouting y plantea el partido, el que analiza el resultado y los fallos que se han tenido o incluso la hora de que el director técnico confeccione el equipo.
-- Entendemos la ciencia sobre los datos como un complemento necesario a la hora de tomar decisiones en el día a día de deporte, pero no como un sustitutivo de las personas. Al final, siempre que se trabaja con personas hay muchos datos que son imposibles de medir y que podrían contribuir a la hora, por ejemplo, de crear tu plantilla en pretemporada.
+- Entendemos la ciencia sobre los datos como un complemento necesario a la hora de tomar decisiones en el día a día de deporte, pero no como un sustitutivo de las personas. Al final, siempre que se trabaja con personas hay muchos datos que son imposibles de medir y que podrían contribuir a la hora, por ejemplo, de crear tu plantilla en pretemporada. 
+- La dinámica obviamente está cambiando y el ejemplo de la NBA es el más inmediato, donde todas las franquicias tienen un equipo de más de treinta personas trabjaando en Big Data & Advanced Analytics dando soporte a las decisiones.
 
 
 ****
