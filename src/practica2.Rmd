@@ -41,6 +41,7 @@ suppressMessages(library(reshape2))
 suppressMessages(library(nortest))
 suppressMessages(library(ggplot2))
 suppressMessages(library(grid))
+suppressMessages(library(caret))
 ```
 ****
 
@@ -1206,17 +1207,57 @@ Por último, su $R^2$ ajustado es de 93.4%. Es decir, algo peor que para el caso
 En conclusión, podemos estimar el rating ofensivo y defensivo de un equipo en base a solo cuatro variables construidas desde su boxscore. Así, podremos estimar qué rating ofensivo podríamos esperar si logramos subir dos puntos el porcentaje de rebote por ejemplo o reducir el porcentaje de pérdidas.
 
 
-\newpage
 ## Regresión logística para estimar victoria
+Vamos a ser aún más ambiciosos. Hemos sido capaces de estimar cómo de bueno o malo será nuestro ataque pero, a la hora de ganar un partido, ¿Qué signfica eso?
 
-Buscamos estimar la probabibilidad de victoria en función de los estadísticos creados. 
+El objetivo de este apartado es estimar la probabilidad de victoria en base a los ocho factores (los cuatro de ataque y los cuatro de defensa) a los que añadiremos la variable de si el equipo ha jugado en casa o no.
+
+El primer paso por tanto es definir nuestro dataset:
 ```{r,eval=TRUE,echo=TRUE}
 datos_logit<-data_teamopp[c("eFG","Off_Reb","Pct_To","FTR","eFG_Opp","Off_Reb_Opp",
                             "Pct_To_opp","FTR_opp","Win","Local")]
 
-model_victoria <- glm(formula=Win ~ . , data=datos_logit, family=binomial)
+```
+
+Vamos a dividir nuestro dataframe en dos subconjuntos, el 70% para realizar el modelo y el 30% para validarlo.
+
+```{r}
+set.seed(430)
+default_idx = createDataPartition(datos_logit$Win, p = 0.7, list = FALSE)
+training = datos_logit[default_idx, ]
+testing = datos_logit[-default_idx, ]
+```
+
+Ahora estamos en condiciones de modelizar. Si anteriormente nos encontrábamos ante un problema de regresión, actualmente es un problema de clasificación cuyo clasificador es binario. 
+
+Podríamos aplicar diferentes técnicas de modelización. En este caso, optaremos por una regresión logística:
+
+```{r}
+model_victoria <- glm(formula=Win ~ . , data=datos_logit, family=binomial(link="logit"))
 summary(model_victoria)
 ```
+De nuvo, analizando la tabla de coeficientes vemos que todas las variables son explicativas. Además, de que cada variable ofensiva con respecto a su homóloga defensiva, como es lógico, tiene peso similar y el signo cambiado.
+
+Nos surge ahora la pregunta, ¿Cómo de bueno es nuestro modelo? Vamos a analizarlo:
+
+```{r}
+prediccion_test <- format(round(predict(model_victoria,testing,type="response")))
+confusionMatrix(as.factor(prediccion_test),as.factor(testing$Win))
+```
+El accuracy es del 93.3%. Es decir, de las 150 observaciones de test, el modelo es capaz de acertar 140, lo que son unos resultados muy buenos. 
+
+Otro estadístico importante cuando se analizan regresiones logísticas es el ROC, que nos da una idea de cómo de bien ordena un modelo. Es decir, cuantas veces nos equivocamos por cada acierto.
+
+Calculemos su área bajo la curva .
+
+```{r}
+rocobj <- roc( datos_logit$Win, predict(model_victoria, datos_logit), 
+               auc = TRUE, ci = TRUE )
+print(rocobj)
+```
+
+En este caso, el ROC es de 99.4%, es decir, de nuevo tenemos un modelo casi perfecto.
+
 
 \newpage
 ## Clustering de jugadores
@@ -1479,10 +1520,6 @@ ggcorrplot(corr_defensa, type = "upper", lab = TRUE)
 \newpage
 ## Curva ROC
 ```{r,eval=TRUE,echo=TRUE}
-rocobj <- roc( datos_logit$Win, predict(model_victoria, datos_logit), 
-               auc = TRUE, ci = TRUE )
-print(rocobj)
-
 plot.roc( rocobj, legacy.axes = TRUE, print.thres = "best", 
           print.auc = TRUE, auc.polygon = FALSE, max.auc.polygon = FALSE, 
           auc.polygon.col="gainsboro", col = 2, grid = TRUE )
