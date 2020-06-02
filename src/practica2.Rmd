@@ -925,7 +925,8 @@ data_players$TS_player <- ifelse((2*(data_players$x3A.x+data_players$x2A.x+
 \]
 
 
-donde 
+Donde:
+
 * FGA=Intentos de tiro de campo
 * FTA=Intentos de tiro libre. 
 * TO=Pérdidas.
@@ -1087,7 +1088,7 @@ Así, se comprueba que para que cada prueba se obtiene un p-valor superior al ni
 alpha = 0.05
 col.names = colnames(data_team)
 
-for (i in 1:ncol(data_team)) {
+for (i in 2:ncol(data_team)) {
   if (i == 1) cat("Variables que no siguen una distribución normal:\n")
   if (is.integer(data_team[,i])| is.numeric(data_team[,i])) {
     p_val = ad.test(data_team[,i])$p.value 
@@ -1102,6 +1103,25 @@ for (i in 1:ncol(data_team)) {
 }
 ```
 
+Para realizar una comprobación más visual de la normalidad de las variables, vamos a utilizar _Q-Q Plots_. Los gráficos cuantil-cuantil permiten comparar la distribución de un conjunto de datos con la de otro conjunto de datos o con una distribución ideal teórica. En nuestro caso utilizaremos la función `qnorm()` para comprar los valores de cada una de nuestras variables cuantitativas con la distribución normal.
+
+```{r ,eval=TRUE,echo=TRUE}
+par(mfrow=c(2,2))
+for(i in 2:ncol(data_team)) {
+  if (is.numeric(data_team[,i])){
+    qqnorm(data_team[,i],main = paste("Normal Q-Q Plot for ",colnames(data_team)[i]))
+    qqline(data_team[,i],col="red")
+    hist(data_team[,i], 
+      main=paste("Histogram for ", colnames(data_team)[i]), 
+      xlab=colnames(data_team)[i], freq = FALSE)
+  }
+}
+par(mfrow=c(2,2))
+```
+
+En base a los diagramas obtenidos, podemos determinar que aunque la mayoría de variables no siguen una distribución normal, si fuera necesario podrían normalizarse, salvo para las variables `Min` y `Local`.
+
+\newpage
 A continuación, estudiamos la homogenidad de varianzas mediante la aplicaicón del test de _Fligner-Killeen_. En este caso, estudiaremos esta homogeneidad en cuanto a los equipos con victoria frente a los equipos con derrota. En el siguiente test, la hipótesis nula consiste en que ambas varianzas son iguales:
 
 ```{r,eval=TRUE,echo=TRUE}
