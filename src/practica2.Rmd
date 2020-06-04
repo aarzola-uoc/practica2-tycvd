@@ -21,9 +21,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r,eval=TRUE,echo=FALSE}
 # Definir directorio de trabajo para Miguel
-#setwd("C:/Users/USER-PC/Desktop/tipologia")
+setwd("C:/Users/USER-PC/Desktop/practica2-tycvd/src")
 # Definir directorio de trabajo para Alejandro
-setwd('/Users/aarzola/Desktop/UOC/1920.S2 - Tipología y ciclo de vida de los datos/PEC_PRAC/PRAC_2/src')
+#setwd('/Users/aarzola/Desktop/UOC/1920.S2 - Tipología y ciclo de vida de los datos/PEC_PRAC/PRAC_2/src')
 ```
 
 \newpage
@@ -42,6 +42,8 @@ suppressMessages(library(nortest))
 suppressMessages(library(ggplot2))
 suppressMessages(library(grid))
 suppressMessages(library(caret))
+suppressMessages(library(ggplot2))
+suppressMessages(library(reshape2))
 ```
 ****
 
@@ -1164,8 +1166,8 @@ Llegamos a una primer conclusión importante. Las variables, guardan relación l
 Modelicemos pues, el rating ofensivo en función de los cuatro factores propuestos:
 
 ```{r}
-model_offesive_rating<- lm(Off_Rat~., data=data_ataque)
-summary(model_offesive_rating)
+model_offensive_rating<- lm(Off_Rat~., data=data_ataque)
+summary(model_offensive_rating)
 ```
 La fórmula obtenida es por tanto:
 $Rating\_Ofensivo=0.315316+1.465926eFG+0.645129Off\_Reb-1.398715Pct\_To+0.333343FTR$
@@ -1200,6 +1202,52 @@ Por último, su $R^2$ ajustado es de 93.4%. Es decir, algo peor que para el caso
 
 En conclusión, podemos estimar el rating ofensivo y defensivo de un equipo en base a solo cuatro variables construidas desde su boxscore. Así, podremos estimar qué rating ofensivo podríamos esperar si logramos subir dos puntos el porcentaje de rebote por ejemplo o reducir el porcentaje de pérdidas.
 
+**Predicciones para las medias por equipo**
+
+Vamos a realizar la predicción por equipo y visualizar su media con respecto a lo observado.
+
+Comencemos por el rating ofensivo:
+
+```{r}
+dt_data_teamopp <- data.table(data_teamopp)
+acumulados_team<-dt_data_teamopp[,list(Off_Rat=mean(Off_Rat),
+eFG=mean(eFG),
+Off_Reb=mean(Off_Reb),
+Pct_To=mean(Pct_To),
+FTR=mean(FTR),
+Def_Rat=mean(Def_Rat),
+eFG_Opp=mean(eFG_Opp),
+Off_Reb_Opp=mean(Off_Reb_Opp),
+Pct_To_opp=mean(Pct_To_opp),
+FTR_opp=mean(FTR_opp)),by=Team]
+
+data_offteam<-acumulados_team[,c("Team","Off_Rat")]
+
+data_offteam$Off_Rat_predicted <- as.data.frame(predict(model_offensive_rating, acumulados_team))
+
+data_offteam2 <- melt(data_offteam, id.vars='Team')
+
+ggplot(data_offteam2, aes(x=Team, y=value, fill=variable)) +
+    geom_bar(stat='identity', position='dodge')+ coord_cartesian(ylim=c(0.8,1.25))+ 
+  theme(axis.text.x = element_text(angle = 90))
+```
+Como podíamos preveer, la estimación es realmente buena. 
+
+Analicemos ahora el rating defensivo:
+
+```{r}
+data_defteam<-acumulados_team[,c("Team","Def_Rat")]
+
+data_defteam$Def_Rat_predicted <- predict(model_defensive_rating, acumulados_team)
+
+
+data_defteam2 <- melt(data_defteam, id.vars='Team')
+
+ggplot(data_defteam2, aes(x=Team, y=value, fill=variable)) +
+    geom_bar(stat='identity', position='dodge')+ coord_cartesian(ylim=c(0.8,1.25))+ 
+  theme(axis.text.x = element_text(angle = 90))
+```
+De nuevo observamos que la estimación es realmente buena con respecto a la media real.
 
 ## Regresión logística para estimar victoria
 Vamos a ser aún más ambiciosos. Hemos sido capaces de estimar cómo de bueno o malo será nuestro ataque pero, a la hora de ganar un partido, ¿Qué signfica eso?
@@ -1252,7 +1300,74 @@ print(rocobj)
 
 En este caso, el ROC es de 99.4%, es decir, de nuevo tenemos un modelo casi perfecto.
 
+## Aplicación
+Vamos a analizar el porcentaje de probabilidad de victoria del Real Madrid contra el resto de equipos jugando de local y de visitante en función de sus datos medios observados.
 
+Cada variable se informará con la media de lo realizado por el conjunto blanco y por su rival. Así por ejemplo, el eFG que se le imputará en su partido contra el Anadolu Efes será:
+- eFG = Mean(eFG_{Real Madrid}, eFG\_Opp_{Anadolu Efes})
+
+```{r}
+df1<-acumulados_team[acumulados_team$Team == "Real Madrid"]
+df2<-acumulados_team[acumulados_team$Team != "Real Madrid"]
+df_RM_local<-matrix(ncol=10, nrow=nrow(df2))
+colnames(df_RM_local)<-c("Team","eFG","eFG_Opp","Off_Reb","Pct_To","FTR","Off_Reb_Opp","Pct_To_opp","FTR_opp","Local")
+df_RM_local<-as.data.frame(df_RM_local)
+for (i in 1:nrow(df2)){
+  df_RM_local$Team[i] <- as.character(df2$Team[i])
+  df_RM_local$eFG[i]  <- 0.5*(df1$eFG+df2$eFG_Opp[i])      
+  df_RM_local$Off_Reb[i] <- 0.5*(df1$Off_Reb+df2$Off_Reb_Opp[i])  
+  df_RM_local$Pct_To[i] <- 0.5*(df1$Pct_To+df2$Pct_To_opp[i])    
+  df_RM_local$FTR[i]  <- 0.5*(df1$FTR+df2$FTR_opp[i])      
+  df_RM_local$eFG_Opp[i]  <- 0.5*(df1$eFG_Opp+df2$eFG[i]) 
+  df_RM_local$Off_Reb_Opp[i]<- 0.5*(df1$Off_Reb_Opp+df2$Off_Reb[i])
+  df_RM_local$Pct_To_opp[i] <- 0.5*(df1$Pct_To_opp+df2$Pct_To[i])
+  df_RM_local$FTR_opp[i]   <- 0.5*(df1$FTR_opp+df2$FTR[i])
+  df_RM_local$Local[i]   <-1
+}
+
+df_RM_visit<-matrix(ncol=10, nrow=nrow(df2))
+colnames(df_RM_visit)<-c("Team","eFG","eFG_Opp","Off_Reb","Pct_To","FTR","Off_Reb_Opp","Pct_To_opp","FTR_opp","Local")
+df_RM_visit<-as.data.frame(df_RM_visit)
+for (i in 1:nrow(df2)){
+  df_RM_visit$Team[i] <- as.character(df2$Team[i])
+  df_RM_visit$eFG[i]  <- 0.5*(df1$eFG+df2$eFG_Opp[i])      
+  df_RM_visit$Off_Reb[i] <- 0.5*(df1$Off_Reb+df2$Off_Reb_Opp[i])  
+  df_RM_visit$Pct_To[i] <- 0.5*(df1$Pct_To+df2$Pct_To_opp[i])    
+  df_RM_visit$FTR[i]  <- 0.5*(df1$FTR+df2$FTR_opp[i])      
+  df_RM_visit$eFG_Opp[i]  <- 0.5*(df1$eFG_Opp+df2$eFG[i]) 
+  df_RM_visit$Off_Reb_Opp[i]<- 0.5*(df1$Off_Reb_Opp+df2$Off_Reb[i])
+  df_RM_visit$Pct_To_opp[i] <- 0.5*(df1$Pct_To_opp+df2$Pct_To[i])
+  df_RM_visit$FTR_opp[i]   <- 0.5*(df1$FTR_opp+df2$FTR[i]) 
+  df_RM_visit$Local[i]   <-0
+}
+
+
+
+df_RM_local$Win_Prob_home <- predict(model_victoria, df_RM_local,type="response")
+
+
+df_RM_visit$Win_Prob_visit <- predict(model_victoria, df_RM_visit,type="response")
+```
+
+Analizamos ahora visualmente los resultados obtenidos:
+```{r}
+df_RM_probwin<-matrix(ncol=3, nrow=nrow(df2))
+colnames(df_RM_probwin)<-c("Team","Prob Win Home", "Prob Win Visit")
+df_RM_probwin<-as.data.frame(df_RM_probwin)
+
+df_RM_probwin$Team <- df_RM_local$Team 
+df_RM_probwin$`Prob Win Home` <- df_RM_local$Win_Prob_home
+df_RM_probwin$`Prob Win Visit` <- df_RM_visit$Win_Prob_visit
+df_RM_probwin2 <- melt(df_RM_probwin, id.vars='Team')
+
+ggplot(df_RM_probwin2, aes(x=Team, y=value, fill=variable)) +
+    geom_bar(stat='identity', position='dodge')+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+Así vemos que, con las medias del Real Madrid lo normal sería que ganara casi todos los partidos a excepción de Efes, el líder de la competición y equipo muy fuerte y Maccabi, Barcelona y CSKA cuando jueguen estos en casa (equipos también muy fuertes).
+
+Resultados lógicos y acordes con lo modelado.
 ## Clustering de jugadores
 
 El último paso de este proyecto es ambicioso. Nos ponemos en la piel del director deportivo de uno de los equipos con un proyecto con recursos limitados.
