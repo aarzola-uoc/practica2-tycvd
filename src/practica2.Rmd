@@ -32,7 +32,6 @@ setwd("C:/Users/USER-PC/Desktop/practica2-tycvd/src")
 ```{r,eval=TRUE,echo=TRUE}
  # Cargamos las librerías necesarias para el proyecto
 suppressMessages(library(dplyr)) 
-suppressMessages(library(plyr))
 suppressMessages(library(data.table))
 suppressMessages(library(ggcorrplot))
 suppressMessages(library(pROC))
@@ -44,6 +43,9 @@ suppressMessages(library(grid))
 suppressMessages(library(caret))
 suppressMessages(library(ggplot2))
 suppressMessages(library(reshape2))
+suppressMessages(library(tidyverse))
+suppressMessages(library(viridisLite))
+suppressMessages(library(viridis))
 ```
 ****
 
@@ -948,7 +950,7 @@ En promedio, por lo tanto, un jugador tendrá una tasa de uso del 20 por ciento.
 
 Aquí solo se miden los resultados reales, por lo que queda bastante fuera. Por ejemplo, un jugador como Ricky Rubio, que prefiere pasar más que tirar, tendrá un porcentaje de USG mucho menor que un jugador que tira mucho como Kobe Bryant.
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 data_players$Usage_rate <- 
 (data_players$x3A.x+data_players$x2A.x+0.44*data_players$FTA.x+data_players$To.x)*
   (data_players$Min.x/5)/(data_players$Min*(data_players$x3A.y+data_players$x2A.y+
@@ -1165,7 +1167,7 @@ Llegamos a una primer conclusión importante. Las variables, guardan relación l
 
 Modelicemos pues, el rating ofensivo en función de los cuatro factores propuestos:
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 model_offensive_rating<- lm(Off_Rat~., data=data_ataque)
 summary(model_offensive_rating)
 ```
@@ -1189,7 +1191,7 @@ corr_defensa
 Como era de suponer, las conclusiones obtenidas en el análisis de correlación son análogas a las del apartado anterior en cuando a pesos e independencia lineal de la variables.
 
 Modelizamos ahora el rating defensivo:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 model_defensive_rating<- lm(Def_Rat~., data=data_defensa)
 summary(model_defensive_rating)
 ```
@@ -1208,7 +1210,7 @@ Vamos a realizar la predicción por equipo y visualizar su media con respecto a 
 
 Comencemos por el rating ofensivo:
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 dt_data_teamopp <- data.table(data_teamopp)
 acumulados_team<-dt_data_teamopp[,list(Off_Rat=mean(Off_Rat),
 eFG=mean(eFG),
@@ -1235,7 +1237,7 @@ Como podíamos preveer, la estimación es realmente buena.
 
 Analicemos ahora el rating defensivo:
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 data_defteam<-acumulados_team[,c("Team","Def_Rat")]
 
 data_defteam$Def_Rat_predicted <- predict(model_defensive_rating, acumulados_team)
@@ -1263,7 +1265,7 @@ datos_logit<-data_teamopp[c("eFG","Off_Reb","Pct_To","FTR","eFG_Opp","Off_Reb_Op
 
 Vamos a dividir nuestro dataframe en dos subconjuntos, el 70% para realizar el modelo y el 30% para validarlo.
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 set.seed(430)
 default_idx = createDataPartition(datos_logit$Win, p = 0.7, list = FALSE)
 training = datos_logit[default_idx, ]
@@ -1274,7 +1276,7 @@ Ahora estamos en condiciones de modelizar. Si anteriormente nos encontrábamos a
 
 Podríamos aplicar diferentes técnicas de modelización. En este caso, optaremos por una regresión logística:
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 model_victoria <- glm(formula=Win ~ . , data=datos_logit, family=binomial(link="logit"))
 summary(model_victoria)
 ```
@@ -1282,7 +1284,7 @@ De nuvo, analizando la tabla de coeficientes vemos que todas las variables son e
 
 Nos surge ahora la pregunta, ¿Cómo de bueno es nuestro modelo? Vamos a analizarlo:
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 prediccion_test <- format(round(predict(model_victoria,testing,type="response")))
 confusionMatrix(as.factor(prediccion_test),as.factor(testing$Win))
 ```
@@ -1292,7 +1294,7 @@ Otro estadístico importante cuando se analizan regresiones logísticas es el RO
 
 Calculemos su área bajo la curva .
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 rocobj <- roc( datos_logit$Win, predict(model_victoria, datos_logit), 
                auc = TRUE, ci = TRUE )
 print(rocobj)
@@ -1306,7 +1308,7 @@ Vamos a analizar el porcentaje de probabilidad de victoria del Real Madrid contr
 Cada variable se informará con la media de lo realizado por el conjunto blanco y por su rival. Así por ejemplo, el eFG que se le imputará en su partido contra el Anadolu Efes será:
 - eFG = Mean(eFG_{Real Madrid}, eFG\_Opp_{Anadolu Efes})
 
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 df1<-acumulados_team[acumulados_team$Team == "Real Madrid"]
 df2<-acumulados_team[acumulados_team$Team != "Real Madrid"]
 df_RM_local<-matrix(ncol=10, nrow=nrow(df2))
@@ -1350,7 +1352,7 @@ df_RM_visit$Win_Prob_visit <- predict(model_victoria, df_RM_visit,type="response
 ```
 
 Analizamos ahora visualmente los resultados obtenidos:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 df_RM_probwin<-matrix(ncol=3, nrow=nrow(df2))
 colnames(df_RM_probwin)<-c("Team","Prob Win Home", "Prob Win Visit")
 df_RM_probwin<-as.data.frame(df_RM_probwin)
@@ -1368,6 +1370,8 @@ ggplot(df_RM_probwin2, aes(x=Team, y=value, fill=variable)) +
 Así vemos que, con las medias del Real Madrid lo normal sería que ganara casi todos los partidos a excepción de Efes, el líder de la competición y equipo muy fuerte y Maccabi, Barcelona y CSKA cuando jueguen estos en casa (equipos también muy fuertes).
 
 Resultados lógicos y acordes con lo modelado.
+
+\newpage
 ## Clustering de jugadores
 
 El último paso de este proyecto es ambicioso. Nos ponemos en la piel del director deportivo de uno de los equipos con un proyecto con recursos limitados.
@@ -1447,13 +1451,13 @@ acumulados_player$cluster<-km.res$cluster
 ```
 
 Definimos el quinteto ideal y vamos a dar alternativas por puesto:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 quinteto_ideal<-c("MICIC, VASILIJE","LARKIN, SHANE","DATOME, LUIGI",
                   "SHENGELIA, TORNIKE", "TAVARES, WALTER")
 ```
 
 Calculamos los jugadores que comparten cluster con Micic. De ellos, escogeremos los que tengan los atributos en general más parecidos, o lo que es lo mismo, los que menos distancia entre su vector de atributos tengan.
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 i <-1
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1462,21 +1466,52 @@ df <- melt(as.matrix(distancias), varnames = c("row", "col"))
 df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
 df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
+```
+
+```{r,eval=TRUE,echo=FALSE}
 print("Recomendaciones Base")
-print(head(df2$nombre[df2$row!=df2$col],5))
+print(as.character(head(df2$nombre[df2$row!=df2$col],5)))
+```
+
+```{r,eval=TRUE,echo=FALSE}
+data <- data.frame(individual=character(),
+                   group=character(), 
+                   value1=integer(),
+                   value2=integer(),
+                   value3=integer(),
+                   value4=integer(),
+                   value5=integer(),
+                   stringsAsFactors=TRUE) 
+
+
+a1 <- subset(data_players, PlayerName %in% as.character(head(df2$nombre[df2$row!=df2$col],5)))
+b1 <- as.data.frame(select(a1, PlayerName, Steal_pct, Block_pct, Offensive_Reb_pct, Defensive_Reb_pct, TS_player))
+b1[is.na(b1)] <- 0
+c1 <- as.data.frame(data.table(b1)[, .(mean(Steal_pct*100), 
+                                       mean(Block_pct*100),
+                                       mean(Offensive_Reb_pct*100),
+                                       mean(Defensive_Reb_pct*100),
+                                       mean(TS_player*100)),by = PlayerName])
+posicion <- rep('Base', length(c1$PlayerName))
+c1 <- cbind(c1, posicion)
+names(c1) <- c("individual","STL%","BLK%","ORB%","DRB%", "TS%","group")
+c1 <- c1[, c(1,7,2,3,4,5,6)]
+
+data <- rbind(data, c1)
 ```
 
 Como comprobamos, las recomendaciones son basante acertadas. Cinco bases, con un perfil relativamente anotador:
-- Sergio Rodríguez.
-- Malcolm Delaney.
-- Theo Maledon.
-- Maodo Lo
-- Sam Van Rossom.
+
+* Sergio Rodríguez.
+* Malcolm Delaney.
+* Theo Maledon.
+* Maodo Lo
+* Sam Van Rossom.
 
 Si tuviearmos un listado con posibles salarios, podríamos adaptar el problema a optimizar nuestro presupuesto.
 
 Analicemos ahora las recomendacioens para el puesto de escolta:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 i <-2
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1485,13 +1520,35 @@ df <- melt(as.matrix(distancias), varnames = c("row", "col"))
 df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
 df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
-print("Recomendaciones Escolta")
-print(head(df2$nombre[df2$row!=df2$col],5))
 ```
-En este caso nos recomienda de nuevo a jugadores del perfil anotador de Larkin. John Dibartolomeo, immer Fredette, James Nunally y Rokas Giedriatis.. Sin embargo, nos llama la atención la aparición de Nikola Mirotic en esta lista, un jugador de perfil interior. Analizando en más detalle, vemos qeu sus datos en cuanto a importancia del lanzamiento exterior o creación de juego (estadísticos relacionados con asistencias) son más propios de un jugador exterior.
+
+```{r,eval=TRUE,echo=FALSE}
+print("Recomendaciones Escolta")
+print(as.character(head(df2$nombre[df2$row!=df2$col],5)))
+```
+
+```{r,eval=TRUE,echo=FALSE}
+a1 <- subset(data_players, PlayerName %in% as.character(head(df2$nombre[df2$row!=df2$col],5)))
+b1 <- as.data.frame(select(a1, PlayerName, Steal_pct, Block_pct, Offensive_Reb_pct, Defensive_Reb_pct, TS_player))
+b1[is.na(b1)] <- 0
+c1 <- as.data.frame(data.table(b1)[, .(mean(Steal_pct*100), 
+                                       mean(Block_pct*100),
+                                       mean(Offensive_Reb_pct*100),
+                                       mean(Defensive_Reb_pct*100),
+                                       mean(TS_player*100)),by = PlayerName])
+posicion <- rep('Escolta', length(c1$PlayerName))
+c1 <- cbind(c1, posicion)
+names(c1) <- c("individual","STL%","BLK%","ORB%","DRB%", "TS%","group")
+c1 <- c1[, c(1,7,2,3,4,5,6)]
+
+data <- rbind(data, c1)
+```
+
+En este caso nos recomienda de nuevo a jugadores del perfil anotador de Larkin. John Dibartolomeo, Jimmer Fredette, James Nunally,
+Adreian Payne y Brock Tum.
 
 Queremos encontrar ahora candidatos al puesto de alero:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 i <-3
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1500,13 +1557,34 @@ df <- melt(as.matrix(distancias), varnames = c("row", "col"))
 df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
 df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
-print("Recomendaciones Alero")
-print(head(df2$nombre[df2$row!=df2$col],5))
 ```
-Como alternativas a Gigi Datome, nos presenta Ron Baker, Petteri Koponen, Jaycee Carroll, Aaron Doornekamp y Alex Abrines. Aleros con características de tirador. 
+
+```{r,eval=TRUE,echo=FALSE}
+print("Recomendaciones Alero")
+print(as.character(head(df2$nombre[df2$row!=df2$col],5)))
+```
+
+```{r,eval=TRUE,echo=FALSE}
+a1 <- subset(data_players, PlayerName %in% as.character(head(df2$nombre[df2$row!=df2$col],5)))
+b1 <- as.data.frame(select(a1, PlayerName, Steal_pct, Block_pct, Offensive_Reb_pct, Defensive_Reb_pct, TS_player))
+b1[is.na(b1)] <- 0
+c1 <- as.data.frame(data.table(b1)[, .(mean(Steal_pct*100), 
+                                       mean(Block_pct*100),
+                                       mean(Offensive_Reb_pct*100),
+                                       mean(Defensive_Reb_pct*100),
+                                       mean(TS_player*100)),by = PlayerName])
+posicion <- rep('Alero', length(c1$PlayerName))
+c1 <- cbind(c1, posicion)
+names(c1) <- c("individual","STL%","BLK%","ORB%","DRB%", "TS%","group")
+c1 <- c1[, c(1,7,2,3,4,5,6)]
+
+data <- rbind(data, c1)
+```
+
+Como alternativas a Gigi Datome, nos presenta Ron Baker, Petteri Koponen, Jaycee Carroll, Aaron Doornekamp y Johann Digtmann. Aleros con características de tirador. 
 
 Si analizamos ahora las alternativas al puesto de ala pívot, el algoritmo nos da:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 i <-4
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1515,13 +1593,34 @@ df <- melt(as.matrix(distancias), varnames = c("row", "col"))
 df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
 df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
-print("Recomendaciones Ala Pívot")
-print(head(df2$nombre[df2$row!=df2$col],5))
 ```
-como opción a Livio Jean-Charles, una de las sopresas de la temporada de Asvel, Cory Higgins, Adrien Moerman, Konstantinos Mitoglou o Vladimir Micov.
+
+```{r,eval=TRUE,echo=FALSE}
+print("Recomendaciones Ala Pívot")
+print(as.character(head(df2$nombre[df2$row!=df2$col],5)))
+```
+
+```{r,eval=TRUE,echo=FALSE}
+a1 <- subset(data_players, PlayerName %in% as.character(head(df2$nombre[df2$row!=df2$col],5)))
+b1 <- as.data.frame(select(a1, PlayerName, Steal_pct, Block_pct, Offensive_Reb_pct, Defensive_Reb_pct, TS_player))
+b1[is.na(b1)] <- 0
+c1 <- as.data.frame(data.table(b1)[, .(mean(Steal_pct*100), 
+                                       mean(Block_pct*100),
+                                       mean(Offensive_Reb_pct*100),
+                                       mean(Defensive_Reb_pct*100),
+                                       mean(TS_player*100)),by = PlayerName])
+posicion <- rep('Ala Pívot', length(c1$PlayerName))
+c1 <- cbind(c1, posicion)
+names(c1) <- c("individual","STL%","BLK%","ORB%","DRB%", "TS%","group")
+c1 <- c1[, c(1,7,2,3,4,5,6)]
+
+data <- rbind(data, c1)
+```
+
+Como opción a Livio Jean-Charles: Bojan Dubljevic, Lukas Lekavicius, Livio Jean-Charles, Cory Higgins y Ilimane Diop.
 
 Por último para alternativas a uno de los mejores cincos de la competición pero con un caché muy elevado (Walter Tavares), obtenemos:
-```{r}
+```{r,eval=TRUE,echo=TRUE}
 i <-5
 aux<-acumulados_player[acumulados_player$PlayerName==quinteto_ideal[i],]$cluster
 distancias<-dist(acumulados_player[acumulados_player$cluster==aux,][,-1],upper = TRUE)
@@ -1530,10 +1629,31 @@ df <- melt(as.matrix(distancias), varnames = c("row", "col"))
 df2<-df[df$row ==which(nombres_cluster==quinteto_ideal[i]),]
 df2$nombre<-nombres_cluster
 df2<- df2[order(df2$value),]
-print("Recomendaciones Pívot")
-print(head(df2$nombre[df2$row!=df2$col],5))
 ```
-a Ahmet Duveriouglu, Kyle Hines del CSKA, Colton Iverson de Zénit y Jan Vesely.
+
+```{r,eval=TRUE,echo=FALSE}
+print("Recomendaciones Pívot")
+print(as.character(head(df2$nombre[df2$row!=df2$col],5)))
+```
+
+```{r,eval=TRUE,echo=FALSE}
+a1 <- subset(data_players, PlayerName %in% as.character(head(df2$nombre[df2$row!=df2$col],5)))
+b1 <- as.data.frame(select(a1, PlayerName, Steal_pct, Block_pct, Offensive_Reb_pct, Defensive_Reb_pct, TS_player))
+b1[is.na(b1)] <- 0
+c1 <- as.data.frame(data.table(b1)[, .(mean(Steal_pct*100), 
+                                       mean(Block_pct*100),
+                                       mean(Offensive_Reb_pct*100),
+                                       mean(Defensive_Reb_pct*100),
+                                       mean(TS_player*100)),by = PlayerName])
+posicion <- rep('Pívot', length(c1$PlayerName))
+c1 <- cbind(c1, posicion)
+names(c1) <- c("individual","STL%","BLK%","ORB%","DRB%", "TS%","group")
+c1 <- c1[, c(1,7,2,3,4,5,6)]
+
+data <- rbind(data, c1)
+```
+
+a Ahmet Duveriouglu, Kyle Hines, Vladimir Stimac. Jan Vesely y Agustine Rubit.
 
 En conclusión, hemos obtenido unas cuantas alternativas que podríamos encontrar en el mercado a estos jugadores.
 
@@ -1657,6 +1777,94 @@ Y los últimos puestos:
 Si comparamos la posición real en la clasificación con la posición de cada equipo en el gráfico vemos que queda completamente claro la relación entre las variables analizadas. Los equipos que están en los primeros puestos se caracterizan por un buen ataque y una buena defensa y los equipos que van últimos tienen mala defense y mal ataque.
 
 \newpage
+## Jugadores recomendados
+
+En la siguiente visualización vamos a representar cinco estadísticas de cada jugador divididos por posición. Los jugadores seleccionados para cada posición son los que se han obtenido como jugadores recomendados en el apartado de [\textcolor{blue}{clustering de jugadores}](#clustering-de-jugadores). Se ha elegido para esta visualización una gráfica de barras en forma circular con las siguientes estadísticas:
+
+* Porcentaje de bloqueos (BLK%)
+* Porcentaje de rebotes defensivos (DRB%)
+* Porcentaje de rebotes ofensivos (ORB%)
+* Porcentaje de robos (STL%)
+* Porcentaje de tiros reales (TS%)
+
+La fórmula para obtener estos estadísticas y su explicación se encuentran en el [\textcolor{blue}{apartado 4.3}](#creación-de-nuevas-métricas-de-jugadores).
+
+```{r, eval=TRUE, echo=FALSE, fig.width=10, fig.height=10, warning=FALSE}
+# Transform data in a tidy format (long format)
+data <- data %>% gather(key = "observation", value="value", -c(1,2)) 
+ 
+# Set a number of 'empty bar' to add at the end of each group
+empty_bar <- 2
+nObsType <- nlevels(as.factor(data$observation))
+to_add <- data.frame( matrix(NA, empty_bar*nlevels(data$group)*nObsType, ncol(data)) )
+colnames(to_add) <- colnames(data)
+to_add$group <- rep(levels(data$group), each=empty_bar*nObsType )
+data <- rbind(data, to_add)
+data <- data %>% arrange(group, individual)
+data$id <- rep( seq(1, nrow(data)/nObsType) , each=nObsType)
+ 
+# Get the name and the y position of each label
+label_data <- data %>% group_by(id, individual) %>% summarize(tot=sum(value))
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
+label_data$hjust <- ifelse( angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+# prepare a data frame for base lines
+base_data <- data %>% 
+  group_by(group) %>% 
+  summarize(start=min(id), end=max(id) - empty_bar) %>% 
+  rowwise() %>% 
+  mutate(title=mean(c(start, end)))
+ 
+# prepare a data frame for grid (scales)
+grid_data <- base_data
+grid_data$end <- grid_data$end[ c( nrow(grid_data), 1:nrow(grid_data)-1)] + 1
+grid_data$start <- grid_data$start - 1
+grid_data <- grid_data[-1,]
+ 
+# Make the plot
+q <- ggplot(data) +      
+  
+  # Add the stacked bar
+  geom_bar(aes(x=as.factor(id), y=value, fill=observation), stat="identity", alpha=0.5) +
+  scale_fill_viridis(discrete=TRUE) +
+  
+  # Add a val=100/75/50/25 lines. I do it at the beginning to make sur barplots are OVER it.
+  geom_segment(data=grid_data, aes(x = end, y = 0, xend = start, yend = 0), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 20, xend = start, yend = 20), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 40, xend = start, yend = 40), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 60, xend = start, yend = 60), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  geom_segment(data=grid_data, aes(x = end, y = 80, xend = start, yend = 80), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+  
+  # Add text showing the value of each 100/75/50/25 lines
+  ggplot2::annotate("text", x = rep(max(data$id),5), y = c(0, 20, 40, 60, 80), label = c("0", "20", "40", "60", "80") , color="grey", size=6 , angle=0, fontface="bold", hjust=1) +
+  
+  ylim(-50,max(label_data$tot, na.rm=T)) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = c(0.5, 0.5), # move legend to the center
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar() +
+  
+  # Add labels on top of each bar
+  geom_text(data=label_data, aes(x=id, y=10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) +
+  
+  # Add base line information
+  geom_segment(data=base_data, aes(x = start, y = -5, xend = end, yend = -5), colour = "black", alpha=0.8, size=0.6 , inherit.aes = FALSE )  +
+  geom_text(data=base_data, aes(x = title, y = -10, label=group), hjust=c(1,1,1,0,0), colour = "black", alpha=0.8, size=2, fontface="bold", inherit.aes = FALSE)
+
+q
+```
+
+Al igual que en la visualización anterior se han ocultado las distintas opciones de configuración del gráfico para facilitar la lectura de este informe. No obstante, se pueden consultar en el fichero `practica2.Rmd` con el código fuente desde el que se ha generado este pdf.
+
+En cuanto al gráfico, vemos que las cinco posiciones están bastante igualadas en base a estos jugadores y estos estadísticos, pero si podemos ver como el mayor porcentaje de bloqueos lo tienen los pívots y ala pívot. También se ve bastante claro que los bases son los que menor porcentaje de rebotes tienen.
+
 ## Correlaciones
 Estos gráficos son complementarios a los presentados en la sección 5.2, de manera más visual.
 En probabilidad y estadística, la correlación indica la fuerza y la dirección de una relación lineal y proporcionalidad entre dos variables estadísticas. Se considera que dos variables cuantitativas están correlacionadas cuando los valores de una de ellas varían sistemáticamente con respecto a los valores homónimos de la otra: si tenemos dos variables (A y B) existe correlación entre ellas si al disminuir los valores de A lo hacen también los de B y viceversa. La correlación entre dos variables no implica, por sí misma, ninguna relación de causalidad.
